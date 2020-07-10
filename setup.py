@@ -18,7 +18,11 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    install_requires=open('requirements.txt').read().split(),
+    install_requires=[
+        'requests',
+        'pyjwt',
+        'python-dateutil',
+    ],
     tests_require=['requests-mock'],
     python_requires='>=3.6',
 )
