@@ -29,7 +29,7 @@ class SmartTub:
     def login(self, username: str, password: str):
         """Authenticate to SmartTub
 
-        This method must be called before any get_ or set_ methods
+        This method must be called before any useful work can be done.
 
         username -- the email address for the SmartTub account
         password -- the password for the SmartTub account
@@ -75,10 +75,17 @@ class SmartTub:
             raise RuntimeError('not logged in')
 
     def request(self, method, path, body=None):
+        """Generic method for making an authenticated request to the API
+
+        This is used by resource objects associated with this API object
+        """
+
         self._require_login()
         r = requests.request(method, f'{self.API_BASE}/{path}', headers=self._headers, json=body)
         r.raise_for_status()
-        return r.json()
+        j = r.json()
+        logger.debug(f'{method} {path} successful: {j}')
+        return j
 
     def get_account(self) -> 'Account':
         """Retrieve the SmartTub account of the authenticated user
@@ -126,35 +133,26 @@ class Spa:
         self.properties = properties
 
     def request(self, method, resource: str, body=None):
-        path = f'spas/{self.id}/{resource}'
-        j = self._api.request(method, path, body)
-        logger.debug(f'{method} {resource} successful: {j}')
-        return j
+        return self._api.request(method, f'spas/{self.id}/{resource}', body)
 
     def get_status(self) -> dict:
         return self.request('GET', 'status')
 
     def get_pumps(self) -> list:
-        pumps = []
-        for pump_info in self.request('GET', 'pumps')['pumps']:
-            pumps.append(SpaPump(self._api, self, **pump_info))
-        return pumps
+        return [SpaPump(self._api, self, **pump_info)
+                for pump_info in self.request('GET', 'pumps')['pumps']]
 
     def get_lights(self) -> list:
-        lights = []
-        for light_info in self.request('GET', 'lights')['lights']:
-            lights.append(SpaLight(self._api, self, **light_info))
-        return lights
+        return [SpaLight(self._api, self, **light_info)
+                for light_info in self.request('GET', 'lights')['lights']]
 
     def get_errors(self) -> list:
         return self.request('GET', 'errors')['content']
 
     def get_reminders(self) -> dict:
-        # API returns both 'reminders' and 'filters', seem to be identical
-        reminders = []
-        for reminder_info in self.request('GET', 'reminders')['reminders']:
-            reminders.append(SpaReminder(self._api, self, **reminder_info))
-        return reminders
+        # API returns both 'reminders' and 'filters', both seem to be identical
+        return [SpaReminder(self._api, self, **reminder_info)
+                for reminder_info in self.request('GET', 'reminders')['reminders']]
 
     def get_debug_status(self) -> dict:
         return self.request('GET', 'debugStatus')['debugStatus']
