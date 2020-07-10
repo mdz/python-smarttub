@@ -2,7 +2,9 @@ import datetime
 import logging
 import sys
 import time
+from typing import List
 
+import dateutil.parser
 import jwt
 import requests
 
@@ -20,12 +22,6 @@ class SmartTub:
 
     API_BASE = 'https://api.smarttub.io'
     API_KEY = 'TfXKgnYbv81lRdJBQcmGH6lWuA2V6oJp7xPlQRTz'
-
-    SECONDARY_FILTRATION_MODES = {'FREQUENT', 'INFREQUENT', 'AWAY'}
-    HEAT_MODES = {'ECONOMY', 'DAY', 'AUTO'}
-    LIGHT_MODES = {'PURPLE', 'ORANGE', 'RED', 'YELLOW', 'GREEN', 'AQUA', 'BLUE', 'HIGH_SPEED_WHEEL', 'OFF'}
-    TEMPERATURE_FORMATS = ['FAHRENHEIT', 'CELSIUS']
-    ENERGY_USAGE_INTERVALS = ['DAY', 'MONTH']
 
     def __init__(self):
         self.logged_in = False
@@ -74,120 +70,131 @@ class SmartTub:
         if not self.logged_in:
             raise RuntimeError('not logged in')
 
-    def get_account(self):
-        """Retrieve information about the SmartTub account
+    def request(self, method, path, body=None):
+        self._require_login()
+        r = requests.request(method, f'{self.API_BASE}/{path}', headers=self._headers, json=body)
+        r.raise_for_status()
+        return r.json()
+
+    def get_account(self) -> 'Account':
+        """Retrieve the SmartTub account of the authenticated user
         """
 
         self._require_login()
         r = requests.get(f'{self.API_BASE}/accounts/{self.account_id}', headers=self._headers)
         r.raise_for_status()
         j = r.json()
+        account = Account(self, **j)
         logger.debug(f'get_account successful: {j}')
-        return j
+        return account
+
+
+class Account:
+    def __init__(self, _api: SmartTub, **properties):
+        self._api = _api
+        self.id = properties['id']
+        self.email = properties['email']
+        self.properties = properties
 
     def get_spas(self):
-        """Retrieve the list of spas associated with the account
-        """
+        spas = []
+        for spa_info in self._api.request('GET', f'spas?ownerId={self.id}')['content']:
+            spas.append(self.get_spa(spa_info['id']))
+        return spas
 
-        self._require_login()
-        r = requests.get(f'{self.API_BASE}/spas/?ownerId={self.account_id}', headers=self._headers)
-        r.raise_for_status()
-        j = r.json()
-        logger.debug(f'get_spas successful: {j}')
-        return j['content']
+    def get_spa(self, spa_id):
+        return Spa(self._api, self, **self._api.request('GET', f'spas/{spa_id}'))
 
-    def get_spa(self, spa_id: str):
-        """Retrieve details about a spa
-        """
 
-        self._require_login()
-        r = requests.get(f'{self.API_BASE}/spas/{spa_id}', headers=self._headers)
-        r.raise_for_status()
-        j = r.json()
-        logger.debug(f'get_spa successful: {j}')
-        return j
+class Spa:
+    SECONDARY_FILTRATION_MODES = {'FREQUENT', 'INFREQUENT', 'AWAY'}
+    HEAT_MODES = {'ECONOMY', 'DAY', 'AUTO'}
+    LIGHT_MODES = {'PURPLE', 'ORANGE', 'RED', 'YELLOW', 'GREEN', 'AQUA', 'BLUE', 'HIGH_SPEED_WHEEL', 'OFF'}
+    TEMPERATURE_FORMATS = ['FAHRENHEIT', 'CELSIUS']
+    ENERGY_USAGE_INTERVALS = ['DAY', 'MONTH']
 
-    def _spa_request(self, method, spa_id: str, resource: str, body=None):
-        self._require_login()
-        url = f'{self.API_BASE}/spas/{spa_id}/{resource}'
-        r = requests.request(method, url, headers=self._headers, json=body)
-        r.raise_for_status()
-        j = r.json()
+    def __init__(self, _api: SmartTub, account: Account, **properties):
+        self._api = _api
+        self.account = account
+        self.id = properties['id']
+        self.brand = properties['brand']
+        self.model = properties['model']
+        self.properties = properties
+
+    def request(self, method, resource: str, body=None):
+        path = f'spas/{self.id}/{resource}'
+        j = self._api.request(method, path, body)
         logger.debug(f'{method} {resource} successful: {j}')
         return j
 
-    def get_spa_status(self, spa_id: str) -> dict:
-        return self._spa_request('GET', spa_id, 'status')
+    def get_status(self) -> dict:
+        return self.request('GET', 'status')
 
-    def get_spa_pumps(self, spa_id: str) -> list:
-        return self._spa_request('GET', spa_id, 'pumps')['pumps']
+    def get_pumps(self) -> list:
+        pumps = []
+        for pump_info in self.request('GET', 'pumps')['pumps']:
+            pumps.append(SpaPump(self._api, self, **pump_info))
+        return pumps
 
-    def get_spa_lights(self, spa_id: str) -> list:
-        """Retrieve the status of lights
-        """
-        return self._spa_request('GET', spa_id, 'lights')['lights']
+    def get_lights(self) -> list:
+        lights = []
+        for light_info in self.request('GET', 'lights')['lights']:
+            lights.append(SpaLight(self._api, self, **light_info))
+        return lights
 
-    def get_spa_errors(self, spa_id: str) -> list:
-        return self._spa_request('GET', spa_id, 'errors')['content']
+    def get_errors(self) -> list:
+        return self.request('GET', 'errors')['content']
 
-    def get_spa_reminders(self, spa_id: str) -> dict:
-        #  -> TypedDict('Reminders', {'filters': dict, 'reminders': dict})
-        return self._spa_request('GET', spa_id, 'reminders')
+    def get_reminders(self) -> dict:
+        # API returns both 'reminders' and 'filters', seem to be identical
+        reminders = []
+        for reminder_info in self.request('GET', 'reminders')['reminders']:
+            reminders.append(SpaReminder(self._api, self, **reminder_info))
+        return reminders
 
-    def get_spa_debug_status(self, spa_id: str) -> dict:
-        return self._spa_request('GET', spa_id, 'debugStatus')['debugStatus']
+    def get_debug_status(self) -> dict:
+        return self.request('GET', 'debugStatus')['debugStatus']
 
-    def get_spa_energy_usage(self, spa_id: str, interval: str, start_date: datetime.date, end_date: datetime.date) -> list:
+    def get_energy_usage(self, interval: str, start_date: datetime.date, end_date: datetime.date) -> list:
         assert interval in self.ENERGY_USAGE_INTERVALS
         body = {
             "start": start_date.isoformat(),
             "end": end_date.isoformat(),
             "interval": interval,
         }
-        return self._spa_request('POST', spa_id, 'energyUsage', body)['buckets']
+        return self.request('POST', 'energyUsage', body)['buckets']
 
-    def set_spa_secondary_filtration_mode(self, spa_id: str, mode: str):
+    def set_secondary_filtration_mode(self, mode: str):
         assert mode in self.SECONDARY_FILTRATION_MODES
         body = {
             'secondaryFiltrationConfig': mode
         }
-        self._spa_request('PATCH', spa_id, 'config', body)
+        self.request('PATCH', 'config', body)
 
-    def set_spa_heat_mode(self, spa_id: str, mode: str):
+    def set_heat_mode(self, mode: str):
         assert mode in self.HEAT_MODES
         body = {
             'heatMode': mode
         }
-        self._spa_request('PATCH', spa_id, 'config', body)
+        self.request('PATCH', 'config', body)
 
-    def set_spa_temperature(self, spa_id: str, temp_c: float):
+    def set_temperature(self, temp_c: float):
         body = {
             'setTemperature': temp_c
         }
-        self._spa_request('PATCH', spa_id, 'config', body)
+        self.request('PATCH', 'config', body)
 
-    def set_spa_light(self, spa_id: str, light_id: int, intensity: int, mode: str):
-        assert mode in self.LIGHT_MODES
-        body = {
-            'intensity': intensity,
-            'mode': mode,
-        }
-        self._spa_request('PATCH', spa_id, 'config', body)
+    def toggle_clearray(self, str):
+        self.request('POST', 'clearray/toggle')
 
-    def toggle_spa_pump(self, spa_id: str, pump_id: str):
-        self._spa_request('POST', spa_id, f'pumps/{pump_id}/toggle')
-
-    def toggle_spa_clearray(self, spa_id: str):
-        self._spa_request('POST', spa_id, 'clearray/toggle')
-
-    def set_spa_temperature_format(self, spa_id: str, temperature_format: str):
+    def set_temperature_format(self, temperature_format: str):
         assert temperature_format in self.TEMPERATURE_MODES
         body = {
             'displayTemperatureFormat': temperature_format
         }
-        self._spa_request('POST', spa_id, 'config', body)
+        self.request('POST', 'config', body)
 
-    def set_spa_date_time(self, spa_id: str, date: datetime.date=None, time: datetime.time=None):
+    def set_date_time(self, date: datetime.date=None, time: datetime.time=None):
         """Set the spa date, time, or both
         """
 
@@ -200,29 +207,66 @@ class SmartTub:
         body = {
             'dateTimeConfig': config
         }
-        self._spa_request('POST', spa_id, body)
+        self.request('POST', body)
+
+    def __str__(self):
+        return f'<Spa {self.id}>'
 
 
-if __name__ == '__main__':
-    from pprint import pprint
-    st = SmartTub()
-    st.login(*sys.argv[1:])
-    pprint(st.get_account())
-    spas = st.get_spas()
-    spa_id = spas[0]['id']
-    spa = st.get_spa(spa_id)
-    pprint(spa)
-    status = st.get_spa_status(spa_id)
-    pprint(status)
-    pumps = st.get_spa_pumps(spa_id)
-    pprint(pumps)
-    lights = st.get_spa_lights(spa_id)
-    pprint(lights)
-    errors = st.get_spa_errors(spa_id)
-    pprint(errors)
-    reminders = st.get_spa_reminders(spa_id)
-    pprint(reminders)
-    debug_status = st.get_spa_debug_status(spa_id)
-    pprint(debug_status)
-    energy_usage_day = st.get_spa_energy_usage(spa_id, 'DAY', end_date=datetime.date.today(), start_date=datetime.date.today() - datetime.timedelta(days=7))
-    pprint(energy_usage_day)
+class SpaPump:
+    def __init__(self, _api: SmartTub, spa: Spa, **properties):
+        self._api = _api
+        self.spa = spa
+        self.id = properties['id']
+        self.speed = properties['speed']
+        self.state = properties['state']
+        self.type = properties['type']
+        self.properties = properties
+
+    def toggle(self):
+        self.spa.request('POST', f'pumps/{self.id}/toggle')
+
+    def __str__(self):
+        return f'<SpaPump {self.id}>'
+
+
+class SpaLight:
+    def __init__(self, _api: SmartTub, spa: Spa, **properties):
+        self._api = _api
+        self.spa = spa
+        self.zone = properties['zone']
+        self.color = properties['color']
+        self.intensity = properties['intensity']
+        self.mode = properties['mode']
+        self.properties = properties
+
+    def set(self, intensity: int, mode: str):
+        assert mode in self.LIGHT_MODES
+        body = {
+            'intensity': intensity,
+            'mode': mode,
+        }
+        self.spa.request('PATCH', f'lights/{self.zone}', body)
+
+
+    def toggle(self):
+        self.spa.request('POST', f'pumps/{self.id}/toggle')
+
+    def __str__(self):
+        return f'<SpaLight {self.zone}>'
+
+class SpaReminder:
+    def __init__(self, _api: SmartTub, spa: Spa, **properties):
+        self._api = _api
+        self.spa = spa
+        self.id = properties['id']
+        self.last_updated = dateutil.parser.isoparse(properties['lastUpdated'])
+        self.name = properties['name']
+        self.remaining_days = properties['remainingDuration']
+        self.snoozed = properties['snoozed']
+        self.state = properties['state']
+
+    # TODO: snoozing
+
+    def __str__(self):
+        return f'<SpaReminder {self.id}>'
