@@ -19,10 +19,11 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        'requests',
+        'aiohttp',
         'pyjwt',
         'python-dateutil',
     ],
-    tests_require=['requests-mock'],
-    python_requires='>=3.6',
+    # tests require python >=3.8
+    tests_require=['pytest-aiohttp'],
+    python_requires='>=3.7',
 )

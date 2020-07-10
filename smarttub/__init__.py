@@ -1,12 +1,13 @@
+import asyncio
 import datetime
 import logging
 import sys
 import time
 from typing import List
 
+import aiohttp
 import dateutil.parser
 import jwt
-import requests
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +24,11 @@ class SmartTub:
     API_BASE = 'https://api.smarttub.io'
     API_KEY = 'TfXKgnYbv81lRdJBQcmGH6lWuA2V6oJp7xPlQRTz'
 
-    def __init__(self):
+    def __init__(self, session: aiohttp.ClientSession=None):
         self.logged_in = False
+        self._session = session or aiohttp.ClientSession()
 
-    def login(self, username: str, password: str):
+    async def login(self, username: str, password: str):
         """Authenticate to SmartTub
 
         This method must be called before any useful work can be done.
@@ -36,7 +38,7 @@ class SmartTub:
         """
 
         # https://auth0.com/docs/api-auth/tutorials/password-grant
-        r = requests.post(
+        r = await self._session.post(
             self.AUTH_URL,
             json={
                 "audience": self.AUTH_AUDIENCE,
@@ -48,12 +50,11 @@ class SmartTub:
                 "password": password,
             }
         )
-
-        if r.status_code == 403:
+        if r.status == 403:
             raise LoginFailed(r.text)
 
         r.raise_for_status()
-        j = r.json()
+        j = await r.json()
 
         self.access_token = j['access_token']
         self.access_token_data = jwt.decode(self.access_token, verify=False)
@@ -74,31 +75,31 @@ class SmartTub:
         if not self.logged_in:
             raise RuntimeError('not logged in')
 
-    def request(self, method, path, body=None):
+    async def request(self, method, path, body=None):
         """Generic method for making an authenticated request to the API
 
         This is used by resource objects associated with this API object
         """
 
         self._require_login()
-        r = requests.request(method, f'{self.API_BASE}/{path}', headers=self._headers, json=body)
+
+        r = await self._session.request(method, f'{self.API_BASE}/{path}', headers=self._headers, json=body)
         r.raise_for_status()
         if int(r.headers['content-length']) == 0:
             return None
-        j = r.json()
+        j = await r.json()
+
         logger.debug(f'{method} {path} successful: {j}')
         return j
 
-    def get_account(self) -> 'Account':
+    async def get_account(self) -> 'Account':
         """Retrieve the SmartTub account of the authenticated user
         """
 
-        self._require_login()
-        r = requests.get(f'{self.API_BASE}/accounts/{self.account_id}', headers=self._headers)
-        r.raise_for_status()
-        j = r.json()
+        j = await self.request('GET', f'accounts/{self.account_id}')
         account = Account(self, **j)
         logger.debug(f'get_account successful: {j}')
+
         return account
 
 
@@ -109,12 +110,12 @@ class Account:
         self.email = properties['email']
         self.properties = properties
 
-    def get_spas(self):
-        return [self.get_spa(spa_info['id']
-                for spa_info in self._api.request('GET', f'spas?ownerId={self.id}')['content'])]
+    async def get_spas(self):
+        return await asyncio.gather(*[self.get_spa(spa['id'])
+                                      for spa in (await self._api.request('GET', f'spas?ownerId={self.id}'))['content']])
 
-    def get_spa(self, spa_id):
-        return Spa(self._api, self, **self._api.request('GET', f'spas/{spa_id}'))
+    async def get_spa(self, spa_id: str):
+        return Spa(self._api, self, **await self._api.request('GET', f'spas/{spa_id}'))
 
 
 class Spa:
@@ -132,72 +133,72 @@ class Spa:
         self.model = properties['model']
         self.properties = properties
 
-    def request(self, method, resource: str, body=None):
-        return self._api.request(method, f'spas/{self.id}/{resource}', body)
+    async def request(self, method, resource: str, body=None):
+        return await self._api.request(method, f'spas/{self.id}/{resource}', body)
 
-    def get_status(self) -> dict:
-        return self.request('GET', 'status')
+    async def get_status(self) -> dict:
+        return await self.request('GET', 'status')
 
-    def get_pumps(self) -> list:
+    async def get_pumps(self) -> list:
         return [SpaPump(self._api, self, **pump_info)
-                for pump_info in self.request('GET', 'pumps')['pumps']]
+                for pump_info in (await self.request('GET', 'pumps'))['pumps']]
 
-    def get_lights(self) -> list:
+    async def get_lights(self) -> list:
         return [SpaLight(self._api, self, **light_info)
-                for light_info in self.request('GET', 'lights')['lights']]
+                for light_info in (await self.request('GET', 'lights'))['lights']]
 
-    def get_errors(self) -> list:
-        return self.request('GET', 'errors')['content']
+    async def get_errors(self) -> list:
+        return (await self.request('GET', 'errors'))['content']
 
-    def get_reminders(self) -> dict:
+    async def get_reminders(self) -> dict:
         # API returns both 'reminders' and 'filters', both seem to be identical
         return [SpaReminder(self._api, self, **reminder_info)
-                for reminder_info in self.request('GET', 'reminders')['reminders']]
+                for reminder_info in (await self.request('GET', 'reminders'))['reminders']]
 
-    def get_debug_status(self) -> dict:
-        return self.request('GET', 'debugStatus')['debugStatus']
+    async def get_debug_status(self) -> dict:
+        return (await self.request('GET', 'debugStatus'))['debugStatus']
 
-    def get_energy_usage(self, interval: str, start_date: datetime.date, end_date: datetime.date) -> list:
+    async def get_energy_usage(self, interval: str, start_date: datetime.date, end_date: datetime.date) -> list:
         assert interval in self.ENERGY_USAGE_INTERVALS
         body = {
             "start": start_date.isoformat(),
             "end": end_date.isoformat(),
             "interval": interval,
         }
-        return self.request('POST', 'energyUsage', body)['buckets']
+        return (await self.request('POST', 'energyUsage', body))['buckets']
 
-    def set_secondary_filtration_mode(self, mode: str):
+    async def set_secondary_filtration_mode(self, mode: str):
         assert mode in self.SECONDARY_FILTRATION_MODES
         body = {
             'secondaryFiltrationConfig': mode
         }
-        self.request('PATCH', 'config', body)
+        await self.request('PATCH', 'config', body)
 
-    def set_heat_mode(self, mode: str):
+    async def set_heat_mode(self, mode: str):
         assert mode in self.HEAT_MODES
         body = {
             'heatMode': mode
         }
-        self.request('PATCH', 'config', body)
+        await self.request('PATCH', 'config', body)
 
-    def set_temperature(self, temp_c: float):
+    async def set_temperature(self, temp_c: float):
         body = {
             # responds with 500 if given more than 1 decimal point
             'setTemperature': round(temp_c, 1)
         }
-        self.request('PATCH', 'config', body)
+        await self.request('PATCH', 'config', body)
 
-    def toggle_clearray(self, str):
-        self.request('POST', 'clearray/toggle')
+    async def toggle_clearray(self, str):
+        await self.request('POST', 'clearray/toggle')
 
-    def set_temperature_format(self, temperature_format: str):
+    async def set_temperature_format(self, temperature_format: str):
         assert temperature_format in self.TEMPERATURE_MODES
         body = {
             'displayTemperatureFormat': temperature_format
         }
-        self.request('POST', 'config', body)
+        await self.request('POST', 'config', body)
 
-    def set_date_time(self, date: datetime.date=None, time: datetime.time=None):
+    async def set_date_time(self, date: datetime.date=None, time: datetime.time=None):
         """Set the spa date, time, or both
         """
 
@@ -210,7 +211,7 @@ class Spa:
         body = {
             'dateTimeConfig': config
         }
-        self.request('POST', body)
+        await self.request('POST', body)
 
     def __str__(self):
         return f'<Spa {self.id}>'
@@ -226,8 +227,8 @@ class SpaPump:
         self.type = properties['type']
         self.properties = properties
 
-    def toggle(self):
-        self.spa.request('POST', f'pumps/{self.id}/toggle')
+    async def toggle(self):
+        await self.spa.request('POST', f'pumps/{self.id}/toggle')
 
     def __str__(self):
         return f'<SpaPump {self.id}>'
@@ -243,18 +244,14 @@ class SpaLight:
         self.mode = properties['mode']
         self.properties = properties
 
-    def set(self, intensity: int, mode: str):
+    async def set(self, intensity: int, mode: str):
         assert mode in self.LIGHT_MODES
         assert (intensity == 0) == (mode == 'OFF')
         body = {
             'intensity': intensity,
             'mode': mode,
         }
-        self.spa.request('PATCH', f'lights/{self.zone}', body)
-
-
-    def toggle(self):
-        self.spa.request('POST', f'pumps/{self.id}/toggle')
+        await self.spa.request('PATCH', f'lights/{self.zone}', body)
 
     def __str__(self):
         return f'<SpaLight {self.zone}>'
