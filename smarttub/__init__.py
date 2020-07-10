@@ -242,6 +242,7 @@ class SpaLight:
 
     def set(self, intensity: int, mode: str):
         assert mode in self.LIGHT_MODES
+        assert (intensity == 0) == (mode == 'OFF')
         body = {
             'intensity': intensity,
             'mode': mode,
