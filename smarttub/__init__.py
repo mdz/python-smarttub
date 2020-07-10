@@ -48,6 +48,10 @@ class SmartTub:
                 "password": password,
             }
         )
+
+        if r.status_code == 403:
+            raise LoginFailed(r.text)
+
         r.raise_for_status()
         j = r.json()
 
@@ -271,3 +275,6 @@ class SpaReminder:
 
     def __str__(self):
         return f'<SpaReminder {self.id}>'
+
+class LoginFailed(RuntimeError):
+    pass
