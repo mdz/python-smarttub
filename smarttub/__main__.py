@@ -10,6 +10,7 @@ from . import SmartTub
 
 logging.basicConfig(level=logging.DEBUG)
 
+
 async def main(args):
     async with aiohttp.ClientSession() as session:
         st = SmartTub(session)

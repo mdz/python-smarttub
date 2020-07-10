@@ -6,6 +6,7 @@ import jwt
 
 import smarttub
 
+
 class TestSmartTub(aiounittest.AsyncTestCase):
     ACCOUNT_ID = 'account_id1'
 
@@ -54,6 +55,7 @@ class TestSmartTub(aiounittest.AsyncTestCase):
         self.assertEqual(account.id, "id1")
         self.assertEqual(account.email, "email1")
 
+
 class TestAccount(aiounittest.AsyncTestCase):
     def setUp(self):
         self.api = create_autospec(smarttub.SmartTub, instance=True)
@@ -61,14 +63,13 @@ class TestAccount(aiounittest.AsyncTestCase):
 
     async def test_get_spas(self):
         self.api.request.side_effect = [
-                {'content': [{'id': 'sid1'}]},
-                {'id': 'sid1', 'brand': 'brand1', 'model': 'model1'}
+            {'content': [{'id': 'sid1'}]},
+            {'id': 'sid1', 'brand': 'brand1', 'model': 'model1'}
         ]
         spas = await self.account.get_spas()
         self.assertEqual(len(spas), 1)
         spa = spas[0]
         self.assertEqual(spa.id, 'sid1')
-
 
 
 class TestSpa(aiounittest.AsyncTestCase):
@@ -117,14 +118,14 @@ class TestSpa(aiounittest.AsyncTestCase):
 
     async def test_get_reminders(self):
         self.api.request.return_value = {
-                'reminders': [{
-                    "id": "id1",
-                    "lastUpdated": "2020-07-09T06:42:53.857Z",
-                    "name": "name1",
-                    "remainingDuration": 23,
-                    "snoozed": False,
-                    "state": "INACTIVE"
-                }]
+            'reminders': [{
+                "id": "id1",
+                "lastUpdated": "2020-07-09T06:42:53.857Z",
+                "name": "name1",
+                "remainingDuration": 23,
+                "snoozed": False,
+                "state": "INACTIVE"
+            }]
         }
         reminders = await self.spa.get_reminders()
         self.assertEqual(len(reminders), 1)

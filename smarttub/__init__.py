@@ -1,15 +1,14 @@
 import asyncio
 import datetime
 import logging
-import sys
 import time
-from typing import List
 
 import aiohttp
 import dateutil.parser
 import jwt
 
 logger = logging.getLogger(__name__)
+
 
 class SmartTub:
     """Interface to the SmartTub API
@@ -256,6 +255,7 @@ class SpaLight:
     def __str__(self):
         return f'<SpaLight {self.zone}>'
 
+
 class SpaReminder:
     def __init__(self, _api: SmartTub, spa: Spa, **properties):
         self._api = _api
@@ -271,6 +271,7 @@ class SpaReminder:
 
     def __str__(self):
         return f'<SpaReminder {self.id}>'
+
 
 class LoginFailed(RuntimeError):
     pass
