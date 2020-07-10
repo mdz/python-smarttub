@@ -110,10 +110,8 @@ class Account:
         self.properties = properties
 
     def get_spas(self):
-        spas = []
-        for spa_info in self._api.request('GET', f'spas?ownerId={self.id}')['content']:
-            spas.append(self.get_spa(spa_info['id']))
-        return spas
+        return [self.get_spa(spa_info['id']
+                for spa_info in self._api.request('GET', f'spas?ownerId={self.id}')['content'])]
 
     def get_spa(self, spa_id):
         return Spa(self._api, self, **self._api.request('GET', f'spas/{spa_id}'))
