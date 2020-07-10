@@ -83,6 +83,8 @@ class SmartTub:
         self._require_login()
         r = requests.request(method, f'{self.API_BASE}/{path}', headers=self._headers, json=body)
         r.raise_for_status()
+        if int(r.headers['content-length']) == 0:
+            return None
         j = r.json()
         logger.debug(f'{method} {path} successful: {j}')
         return j
@@ -182,7 +184,8 @@ class Spa:
 
     def set_temperature(self, temp_c: float):
         body = {
-            'setTemperature': temp_c
+            # responds with 500 if given more than 1 decimal point
+            'setTemperature': round(temp_c, 1)
         }
         self.request('PATCH', 'config', body)
 

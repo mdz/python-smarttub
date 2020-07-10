@@ -8,7 +8,7 @@ from . import SmartTub
 logging.basicConfig(level=logging.DEBUG)
 
 st = SmartTub()
-st.login(*sys.argv[1:])
+st.login(*sys.argv[1:3])
 account = st.get_account()
 print(account)
 spas = account.get_spas()
@@ -28,3 +28,5 @@ for spa in spas:
     energy_usage_day = spa.get_energy_usage('DAY', end_date=datetime.date.today(), start_date=datetime.date.today() - datetime.timedelta(days=7))
     pprint(energy_usage_day)
 
+if len(sys.argv) > 3:
+    spa.set_temperature(38.3)
