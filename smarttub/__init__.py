@@ -21,7 +21,6 @@ class SmartTub:
     AUTH_ACCOUNT_ID_KEY = 'http://operation-link.com/account_id'
 
     API_BASE = 'https://api.smarttub.io'
-    API_KEY = 'TfXKgnYbv81lRdJBQcmGH6lWuA2V6oJp7xPlQRTz'
 
     def __init__(self, session: aiohttp.ClientSession=None):
         self.logged_in = False
