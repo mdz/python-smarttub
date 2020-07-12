@@ -82,7 +82,12 @@ class SmartTub:
         self._require_login()
 
         r = await self._session.request(method, f'{self.API_BASE}/{path}', headers=self._headers, json=body)
-        r.raise_for_status()
+
+        try:
+            r.raise_for_status()
+        except aiohttp.ClientResponseError as e:
+            raise APIError(e)
+
         if int(r.headers['content-length']) == 0:
             return None
         j = await r.json()
@@ -273,4 +278,7 @@ class SpaReminder:
 
 
 class LoginFailed(RuntimeError):
+    pass
+
+class APIError(RuntimeError):
     pass
