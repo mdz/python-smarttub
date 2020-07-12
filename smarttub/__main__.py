@@ -40,6 +40,7 @@ async def main(args):
             pprint(await energy_usage_day)
 
         if len(args) > 2:
+            await st._refresh_token()
             await spa.set_temperature(38.3)
 
 asyncio.run(main(sys.argv[1:]))

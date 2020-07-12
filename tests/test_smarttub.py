@@ -1,4 +1,5 @@
 import aiohttp
+import time
 from unittest.mock import AsyncMock, create_autospec
 
 import aiounittest
@@ -32,9 +33,8 @@ class TestSmartTub(aiounittest.AsyncTestCase):
 
     async def login(self):
         self.session.post.return_value = self.mock_response({
-            "access_token": jwt.encode({self.st.AUTH_ACCOUNT_ID_KEY: self.ACCOUNT_ID}, 'secret').decode(),
+            "access_token": jwt.encode({self.st.AUTH_ACCOUNT_ID_KEY: self.ACCOUNT_ID, "exp": time.time() + 3600}, 'secret').decode(),
             "token_type": "Bearer",
-            "expires_in": 86400,
             "refresh_token": "refresh1",
         })
         return await self.st.login('username1', 'password1')
@@ -43,6 +43,15 @@ class TestSmartTub(aiounittest.AsyncTestCase):
         await self.login()
         self.assertEqual(self.st.account_id, self.ACCOUNT_ID)
         self.assertEqual(self.st.logged_in, True)
+
+    async def test_refresh_token(self):
+        await self.login()
+        login_token_expiration = self.st.token_expires_at
+        self.session.post.return_value = self.mock_response({
+            "access_token": jwt.encode({self.st.AUTH_ACCOUNT_ID_KEY: self.ACCOUNT_ID, "exp": time.time() + 3601}, 'secret').decode(),
+        })
+        await self.st._refresh_token()
+        self.assertGreater(self.st.token_expires_at, login_token_expiration)
 
     async def test_get_account(self):
         await self.login()

@@ -54,9 +54,7 @@ class SmartTub:
         r.raise_for_status()
         j = await r.json()
 
-        self.access_token = j['access_token']
-        self.access_token_data = jwt.decode(self.access_token, verify=False)
-        self.expires_at = time.time() + j['expires_in']
+        self._set_access_token(j['access_token'])
         self.refresh_token = j['refresh_token']
         assert j['token_type'] == 'Bearer'
 
@@ -69,9 +67,31 @@ class SmartTub:
     def _headers(self):
         return {'Authorization': f'Bearer {self.access_token}'}
 
-    def _require_login(self):
+    async def _require_login(self):
         if not self.logged_in:
             raise RuntimeError('not logged in')
+        if self.token_expires_at <= time.time():
+            await self._refresh_token()
+
+    def _set_access_token(self, token):
+        self.access_token = token
+        self.access_token_data = jwt.decode(self.access_token, verify=False)
+        self.token_expires_at = self.access_token_data['exp']
+
+    async def _refresh_token(self):
+        # https://auth0.com/docs/tokens/guides/use-refresh-tokens
+        r = await self._session.post(
+            self.AUTH_URL,
+            json={
+                "grant_type": "refresh_token",
+                "client_id": self.AUTH_CLIENT_ID,
+                "refresh_token": self.refresh_token,
+            }
+        )
+        r.raise_for_status()
+        j = await r.json()
+        self._set_access_token(j['access_token'])
+        logger.debug('token refresh successful')
 
     async def request(self, method, path, body=None):
         """Generic method for making an authenticated request to the API
@@ -79,7 +99,7 @@ class SmartTub:
         This is used by resource objects associated with this API object
         """
 
-        self._require_login()
+        await self._require_login()
 
         r = await self._session.request(method, f'{self.API_BASE}/{path}', headers=self._headers, json=body)
 
