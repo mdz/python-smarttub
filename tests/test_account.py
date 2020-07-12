@@ -2,13 +2,14 @@ import pytest
 
 import smarttub
 
+pytestmark = pytest.mark.asyncio
+
 
 @pytest.fixture(name='account')
 def account(mock_api):
     return smarttub.Account(mock_api, id='id1', email='email1')
 
 
-@pytest.mark.asyncio
 async def test_get_spas(mock_api, account):
     mock_api.request.side_effect = [
         {'content': [{'id': 'sid1'}]},

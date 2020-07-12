@@ -4,6 +4,8 @@ import pytest
 
 import smarttub
 
+pytestmark = pytest.mark.asyncio
+
 
 @pytest.fixture(name='mock_account')
 def mock_account(mock_api):
@@ -17,14 +19,12 @@ def spa(mock_api, mock_account):
     return spa
 
 
-@pytest.mark.asyncio
 async def test_get_status(mock_api, spa):
     mock_api.request.return_value = 'status1'
     status = await spa.get_status()
     assert status == 'status1'
 
 
-@pytest.mark.asyncio
 async def test_get_pumps(mock_api, spa):
     mock_api.request.return_value = {
         'pumps': [{
@@ -40,7 +40,6 @@ async def test_get_pumps(mock_api, spa):
     assert pump.id == 'pid1'
 
 
-@pytest.mark.asyncio
 async def test_get_lights(mock_api, spa):
     mock_api.request.return_value = {
         'lights': [{
@@ -56,14 +55,12 @@ async def test_get_lights(mock_api, spa):
     assert light.zone == 1
 
 
-@pytest.mark.asyncio
 async def test_get_errors(mock_api, spa):
     mock_api.request.return_value = {'content': []}
     errors = await spa.get_errors()
     assert len(errors) == 0
 
 
-@pytest.mark.asyncio
 async def test_get_reminders(mock_api, spa):
     mock_api.request.return_value = {
         'reminders': [{

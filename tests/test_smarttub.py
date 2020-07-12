@@ -8,6 +8,8 @@ import smarttub
 
 ACCOUNT_ID = 'account_id1'
 
+pytestmark = pytest.mark.asyncio
+
 
 @pytest.fixture(name='unauthenticated_api')
 async def unauthenticated_api(aresponses):
@@ -27,13 +29,11 @@ async def api(unauthenticated_api, aresponses):
     return api
 
 
-@pytest.mark.asyncio
 async def test_login(api, aresponses):
     assert api.account_id == ACCOUNT_ID
     assert api.logged_in is True
 
 
-@pytest.mark.asyncio
 async def test_refresh_token(api, aresponses):
     login_token_expiration = api.token_expires_at
     aresponses.add(response={
@@ -43,7 +43,6 @@ async def test_refresh_token(api, aresponses):
     assert api.token_expires_at > login_token_expiration
 
 
-@pytest.mark.asyncio
 async def test_get_account(api, aresponses):
     aresponses.add(response={
         "id": "id1",
