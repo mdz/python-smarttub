@@ -1,5 +1,5 @@
 import aiohttp
-from unittest.mock import AsyncMock, create_autospec
+from unittest.mock import create_autospec
 
 import pytest
 
@@ -16,22 +16,8 @@ def mock_response():
     return response
 
 
-@pytest.fixture(name='mock_session')
-def mock_session(mock_response):
-    session = create_autospec(aiohttp.ClientSession, instance=True)
-    session.get = AsyncMock(spec=aiohttp.ClientSession.get)
-    session.get.return_value = mock_response
-    session.post = AsyncMock(spec=aiohttp.ClientSession.post)
-    session.post.return_value = mock_response
-    session.patch = AsyncMock(spec=aiohttp.ClientSession.patch)
-    session.patch.return_value = mock_response
-    session.request = AsyncMock(spec=aiohttp.ClientSession.request)
-    session.request.return_value = mock_response
-    return session
-
-
 @pytest.fixture(name='mock_api')
-def mock_api(mock_session):
+def mock_api():
     api = create_autospec(smarttub.SmartTub, instance=True)
     return api
 
