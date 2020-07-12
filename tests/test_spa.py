@@ -1,6 +1,14 @@
+from unittest.mock import create_autospec
+
 import pytest
 
 import smarttub
+
+
+@pytest.fixture(name='mock_account')
+def mock_account(mock_api):
+    account = create_autospec(smarttub.Account, instance=True)
+    return account
 
 
 @pytest.fixture(name='spa')

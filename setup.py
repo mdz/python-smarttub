@@ -24,6 +24,6 @@ setuptools.setup(
         'python-dateutil',
     ],
     # tests require python >=3.8
-    tests_require=['pytest', 'pytest-asyncio'],
+    tests_require=['pytest', 'pytest-asyncio', 'aresponses'],
     python_requires='>=3.7',
 )
