@@ -7,3 +7,9 @@ pip install python-smarttub
 ```
 
 See `smarttub/__main__.py` for example usage
+
+
+# Contributing
+```bash
+pip install pre-commit && pre-commit install
+```
