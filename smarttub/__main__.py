@@ -25,8 +25,6 @@ async def main(args):
             lights = spa.get_lights()
             errors = spa.get_errors()
             reminders = spa.get_reminders()
-            debug_status = spa.get_debug_status()
-            energy_usage_day = spa.get_energy_usage(spa.EnergyUsageInterval.DAY, end_date=datetime.date.today(), start_date=datetime.date.today() - datetime.timedelta(days=7))
 
             pprint(await status)
             for pump in await pumps:
@@ -36,11 +34,19 @@ async def main(args):
             for reminder in await reminders:
                 print(reminder)
             pprint(await errors)
-            pprint(await debug_status)
-            pprint(await energy_usage_day)
 
-        if len(args) > 2:
-            await st._refresh_token()
-            await spa.set_temperature(38.3)
+            if len(args) > 2:
+                await light.set_mode(light.LightMode.RED, 25)
+                lights = await spa.get_lights()
+                print(lights[0])
+
+        if len(args) > 3:
+            debug_status = spa.get_debug_status()
+            energy_usage_day = spa.get_energy_usage(spa.EnergyUsageInterval.DAY, end_date=datetime.date.today(), start_date=datetime.date.today() - datetime.timedelta(days=7))
+            set_temp = spa.set_temperature(38.3)
+            await set_temp
+            pprint(await energy_usage_day)
+            pprint(await debug_status)
+            # await st._refresh_token()
 
 asyncio.run(main(sys.argv[1:]))

@@ -252,7 +252,7 @@ class SpaPump:
         await self.spa.request('POST', f'pumps/{self.id}/toggle')
 
     def __str__(self):
-        return f'<SpaPump {self.id}>'
+        return f'<SpaPump {self.id}: {self.type}={self.state}>'
 
 
 class SpaLight:
@@ -262,21 +262,28 @@ class SpaLight:
         self._api = api
         self.spa = spa
         self.zone = properties['zone']
-        self.color = properties['color']
+
+        color = properties['color']
+        self.red = color['red']
+        self.green = color['green']
+        self.blue = color['blue']
+        self.white = color['white']
+
         self.intensity = properties['intensity']
         self.mode = properties['mode']
         self.properties = properties
 
-    async def set(self, intensity: int, mode: LightMode):
+    async def set_mode(self, mode: LightMode, intensity: int):
         assert (intensity == 0) == (mode == self.LightMode.OFF)
+
         body = {
             'intensity': intensity,
-            'mode': mode,
+            'mode': mode.name,
         }
         await self.spa.request('PATCH', f'lights/{self.zone}', body)
 
     def __str__(self):
-        return f'<SpaLight {self.zone}>'
+        return f'<SpaLight {self.zone}: {self.red}/{self.green}/{self.blue}/{self.white}>'
 
 
 class SpaReminder:
