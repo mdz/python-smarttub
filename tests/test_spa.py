@@ -43,7 +43,7 @@ async def test_get_pumps(mock_api, spa):
 async def test_get_lights(mock_api, spa):
     mock_api.request.return_value = {
         'lights': [{
-            'color': {'blue': 0, 'green': 0, 'red': 0},
+            'color': {'blue': 0, 'green': 0, 'red': 0, 'white': 0},
             'intensity': 0,
             'mode': 'OFF',
             'zone': 1,
