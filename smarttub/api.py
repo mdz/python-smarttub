@@ -165,19 +165,20 @@ class Spa:
         return await self.request('GET', 'status')
 
     async def get_pumps(self) -> list:
-        return [SpaPump(self._api, self, **pump_info)
+        return [SpaPump(self, **pump_info)
                 for pump_info in (await self.request('GET', 'pumps'))['pumps']]
 
     async def get_lights(self) -> list:
-        return [SpaLight(self._api, self, **light_info)
+        return [SpaLight(self, **light_info)
                 for light_info in (await self.request('GET', 'lights'))['lights']]
 
     async def get_errors(self) -> list:
-        return (await self.request('GET', 'errors'))['content']
+        return [SpaError(self, **error_info)
+                for error_info in (await self.request('GET', 'errors'))['content']]
 
     async def get_reminders(self) -> dict:
         # API returns both 'reminders' and 'filters', both seem to be identical
-        return [SpaReminder(self._api, self, **reminder_info)
+        return [SpaReminder(self, **reminder_info)
                 for reminder_info in (await self.request('GET', 'reminders'))['reminders']]
 
     async def get_debug_status(self) -> dict:
@@ -239,8 +240,7 @@ class Spa:
 
 
 class SpaPump:
-    def __init__(self, api: SmartTub, spa: Spa, **properties):
-        self._api = api
+    def __init__(self, spa: Spa, **properties):
         self.spa = spa
         self.id = properties['id']
         self.speed = properties['speed']
@@ -258,8 +258,7 @@ class SpaPump:
 class SpaLight:
     LightMode = Enum('LightMode', 'PURPLE ORANGE RED YELLOW GREEN AQUA BLUE HIGH_SPEED_WHEEL OFF')
 
-    def __init__(self, api: SmartTub, spa: Spa, **properties):
-        self._api = api
+    def __init__(self, spa: Spa, **properties):
         self.spa = spa
         self.zone = properties['zone']
 
@@ -287,8 +286,7 @@ class SpaLight:
 
 
 class SpaReminder:
-    def __init__(self, api: SmartTub, spa: Spa, **properties):
-        self._api = api
+    def __init__(self, spa: Spa, **properties):
         self.spa = spa
         self.id = properties['id']
         self.last_updated = dateutil.parser.isoparse(properties['lastUpdated'])
@@ -301,6 +299,21 @@ class SpaReminder:
 
     def __str__(self):
         return f'<SpaReminder {self.id}>'
+
+
+class SpaError:
+    def __init__(self, spa: Spa, **properties):
+        self.spa = spa
+        self.code = properties['code']
+        self.title = properties['title']
+        self.description = properties['description']
+        self.created_at = dateutil.parser.isoparse(properties['createdAt'])
+        self.updated_at = dateutil.parser.isoparse(properties['updatedAt'])
+        self.active = properties['active']
+        self.error_type = properties['errorType']
+
+    def __str__(self):
+        return f'<SpaError {self.title}>'
 
 
 class LoginFailed(RuntimeError):

@@ -56,9 +56,11 @@ async def test_get_lights(mock_api, spa):
 
 
 async def test_get_errors(mock_api, spa):
-    mock_api.request.return_value = {'content': []}
+    mock_api.request.return_value = {'content': [{'code': 11, 'title': 'Flow Switch Stuck Open', 'description': None, 'createdAt': '2019-12-11T18:51:10.123Z', 'updatedAt': '2020-07-14T19:00:50.705Z', 'active': True, 'errorType': 'TUB_ERROR'}], 'pageable': {'sort': {'sorted': True, 'unsorted': False, 'empty': False}, 'pageSize': 10, 'pageNumber': 0, 'offset': 0, 'paged': True, 'unpaged': False}, 'last': True, 'totalPages': 1, 'totalElements': 1, 'first': True, 'sort': {'sorted': True, 'unsorted': False, 'empty': False}, 'numberOfElements': 1, 'size': 10, 'number': 0, 'empty': False}
     errors = await spa.get_errors()
-    assert len(errors) == 0
+    assert len(errors) == 1
+    error = errors[0]
+    assert error.title == 'Flow Switch Stuck Open'
 
 
 async def test_get_reminders(mock_api, spa):
