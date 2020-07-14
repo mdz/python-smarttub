@@ -26,7 +26,7 @@ async def main(args):
             errors = spa.get_errors()
             reminders = spa.get_reminders()
             debug_status = spa.get_debug_status()
-            energy_usage_day = spa.get_energy_usage('DAY', end_date=datetime.date.today(), start_date=datetime.date.today() - datetime.timedelta(days=7))
+            energy_usage_day = spa.get_energy_usage(spa.EnergyUsageInterval.DAY, end_date=datetime.date.today(), start_date=datetime.date.today() - datetime.timedelta(days=7))
 
             pprint(await status)
             for pump in await pumps:

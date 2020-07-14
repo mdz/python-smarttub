@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+from enum import Enum
 import logging
 import time
 
@@ -142,11 +143,10 @@ class Account:
 
 
 class Spa:
-    SECONDARY_FILTRATION_MODES = {'FREQUENT', 'INFREQUENT', 'AWAY'}
-    HEAT_MODES = {'ECONOMY', 'DAY', 'AUTO'}
-    LIGHT_MODES = {'PURPLE', 'ORANGE', 'RED', 'YELLOW', 'GREEN', 'AQUA', 'BLUE', 'HIGH_SPEED_WHEEL', 'OFF'}
-    TEMPERATURE_FORMATS = ['FAHRENHEIT', 'CELSIUS']
-    ENERGY_USAGE_INTERVALS = ['DAY', 'MONTH']
+    SecondaryFiltrationMode = Enum('SecondaryFiltrationMode', 'FREQUENT INFREQUENT AWAY')
+    HeatMode = Enum('HeatMode', 'ECONOMY DAY AUTO')
+    TemperatureFormat = Enum('TemperatureFormat', 'FAHRENHEIT CELSIUS')
+    EnergyUsageInterval = Enum('EnergyUsageInterval', 'DAY MONTH')
 
     def __init__(self, api: SmartTub, account: Account, **properties):
         self._api = api
@@ -183,26 +183,23 @@ class Spa:
     async def get_debug_status(self) -> dict:
         return (await self.request('GET', 'debugStatus'))['debugStatus']
 
-    async def get_energy_usage(self, interval: str, start_date: datetime.date, end_date: datetime.date) -> list:
-        assert interval in self.ENERGY_USAGE_INTERVALS
+    async def get_energy_usage(self, interval: EnergyUsageInterval, start_date: datetime.date, end_date: datetime.date) -> list:
         body = {
             "start": start_date.isoformat(),
             "end": end_date.isoformat(),
-            "interval": interval,
+            "interval": interval.name,
         }
         return (await self.request('POST', 'energyUsage', body))['buckets']
 
-    async def set_secondary_filtration_mode(self, mode: str):
-        assert mode in self.SECONDARY_FILTRATION_MODES
+    async def set_secondary_filtration_mode(self, mode: SecondaryFiltrationMode):
         body = {
-            'secondaryFiltrationConfig': mode
+            'secondaryFiltrationConfig': mode.name
         }
         await self.request('PATCH', 'config', body)
 
-    async def set_heat_mode(self, mode: str):
-        assert mode in self.HEAT_MODES
+    async def set_heat_mode(self, mode: HeatMode):
         body = {
-            'heatMode': mode
+            'heatMode': mode.name
         }
         await self.request('PATCH', 'config', body)
 
@@ -216,10 +213,9 @@ class Spa:
     async def toggle_clearray(self, str):
         await self.request('POST', 'clearray/toggle')
 
-    async def set_temperature_format(self, temperature_format: str):
-        assert temperature_format in self.TEMPERATURE_MODES
+    async def set_temperature_format(self, temperature_format: TemperatureFormat):
         body = {
-            'displayTemperatureFormat': temperature_format
+            'displayTemperatureFormat': temperature_format.name
         }
         await self.request('POST', 'config', body)
 
@@ -260,6 +256,8 @@ class SpaPump:
 
 
 class SpaLight:
+    LightMode = Enum('LightMode', 'PURPLE ORANGE RED YELLOW GREEN AQUA BLUE HIGH_SPEED_WHEEL OFF')
+
     def __init__(self, api: SmartTub, spa: Spa, **properties):
         self._api = api
         self.spa = spa
@@ -269,9 +267,8 @@ class SpaLight:
         self.mode = properties['mode']
         self.properties = properties
 
-    async def set(self, intensity: int, mode: str):
-        assert mode in self.LIGHT_MODES
-        assert (intensity == 0) == (mode == 'OFF')
+    async def set(self, intensity: int, mode: LightMode):
+        assert (intensity == 0) == (mode == self.LightMode.OFF)
         body = {
             'intensity': intensity,
             'mode': mode,
