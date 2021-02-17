@@ -76,7 +76,7 @@ class SmartTub:
 
     def _set_access_token(self, token):
         self.access_token = token
-        self.access_token_data = jwt.decode(self.access_token, verify=False)
+        self.access_token_data = jwt.decode(self.access_token, options={"verify_signature": False})
         self.token_expires_at = self.access_token_data['exp']
 
     async def _refresh_token(self):

@@ -1,3 +1,3 @@
-aiohttp
-pyjwt
-python-dateutil
+aiohttp==3.7.3
+pyjwt==2.0.1
+python-dateutil==2.8.1
