@@ -20,7 +20,7 @@ setuptools.setup(
     ],
     install_requires=[
         'aiohttp>=3.0.0,<4.0.0',
-        'pyjwt>=1.0.0,<3.0.0',
+        'pyjwt>=1.0.0,<2.0.0',
         'python-dateutil>=2.0.0,<3.0.0',
     ],
     # tests require python >=3.8
