@@ -3,6 +3,7 @@ import datetime
 from enum import Enum
 import logging
 import time
+from typing import List
 
 import aiohttp
 import dateutil.parser
@@ -162,21 +163,88 @@ class Spa:
         return await self._api.request(method, f'spas/{self.id}/{resource}', body)
 
     async def get_status(self) -> dict:
+        """Query the status of the spa.
+
+        Example response:
+
+        {'ambientTemperature': 65.6,
+         'blowoutCycle': 'INACTIVE',
+         'cleanupCycle': 'INACTIVE',
+         'current': {'average': 0.0, 'kwh': 0.48, 'max': 0.0, 'min': 0.0, 'value': 0.0},
+         'date': '2021-02-17',
+         'demoMode': 'DISABLED',
+         'dipSwitches': 8,
+         'displayTemperatureFormat': 'FAHRENHEIT',
+         'error': {'code': 0, 'description': None, 'title': 'All Clear'},
+         'errorCode': 0,
+         'fieldsLastUpdated': {'cfstEvent': '2021-02-17T07:24:32.010Z',
+                               'errEvent': '2021-02-17T09:10:31.059Z',
+                               'heatMode': '2020-07-09T19:40:01.883Z',
+                               'locEvent': '2021-02-14T01:12:05.980Z',
+                               'online': '2021-02-17T16:59:15.785Z',
+                               'rpstEvent': '2021-02-17T15:33:44.539Z',
+                               'setTemperature': '2021-02-16T17:54:01.511Z',
+                               'sp2stEvent': '2021-02-17T07:24:34.019Z',
+                               'spstEvent': '2021-02-17T16:44:26.266Z',
+                               'uv': '2021-02-17T06:52:47.019Z',
+                               'uvOnDemand': '2021-02-13T04:36:06.268Z',
+                               'wcstEvent': '2021-02-17T16:54:29.315Z'},
+         'flowSwitch': 'OPEN',
+         'heatMode': 'AUTO',
+         'heater': 'OFF',
+         'highTemperatureLimit': 35.6,
+         'lastUpdated': '2021-02-17T16:54:29.443Z',
+         'lights': None,
+         'location': {'accuracy': 823.0,
+                      'latitude': 35.123456,
+                      'longitude': -120.123456},
+         'locks': {'access': 'UNLOCKED',
+                   'maintenance': 'UNLOCKED',
+                   'spa': 'UNLOCKED',
+                   'temperature': 'UNLOCKED'},
+         'online': True,
+         'ozone': 'OFF',
+         'primaryFiltration': {'cycle': 1,
+                               'duration': 4,
+                               'lastUpdated': '2021-01-20T11:38:57.014Z',
+                               'mode': 'NORMAL',
+                               'startHour': 2,
+                               'status': 'INACTIVE'},
+         'pumps': None,
+         'secondaryFiltration': {'lastUpdated': '2020-07-09T19:39:52.961Z',
+                                 'mode': 'AWAY',
+                                 'status': 'INACTIVE'},
+         'setTemperature': 38.3,
+         'state': 'NORMAL',
+         'time': '00:36:00',
+         'timeFormat': 'HOURS_12',
+         'timeSet': None,
+         'timezone': None,
+         'uv': 'OFF',
+         'uvOnDemand': 'OFF',
+         'versions': {'balboa': '1.06', 'controller': '1.28', 'jacuzziLink': '53'},
+         'water': {'oxidationReductionPotential': 604,
+                   'ph': 7.01,
+                   'temperature': 38.3,
+                   'temperatureLastUpdated': '2021-02-17T14:15:26.694Z',
+                   'turbidity': 0.01},
+         'watercare': None}
+        """
         return await self.request('GET', 'status')
 
-    async def get_pumps(self) -> list:
+    async def get_pumps(self) -> List['SpaPump']:
         return [SpaPump(self, **pump_info)
                 for pump_info in (await self.request('GET', 'pumps'))['pumps']]
 
-    async def get_lights(self) -> list:
+    async def get_lights(self) -> List['SpaLight']:
         return [SpaLight(self, **light_info)
                 for light_info in (await self.request('GET', 'lights'))['lights']]
 
-    async def get_errors(self) -> list:
+    async def get_errors(self) -> List['SpaError']:
         return [SpaError(self, **error_info)
                 for error_info in (await self.request('GET', 'errors'))['content']]
 
-    async def get_reminders(self) -> dict:
+    async def get_reminders(self) -> List['SpaReminder']:
         # API returns both 'reminders' and 'filters', both seem to be identical
         return [SpaReminder(self, **reminder_info)
                 for reminder_info in (await self.request('GET', 'reminders'))['reminders']]
