@@ -21,7 +21,7 @@ async def unauthenticated_api(aresponses):
 async def api(unauthenticated_api, aresponses):
     api = unauthenticated_api
     aresponses.add(response={
-        "access_token": jwt.encode({api.AUTH_ACCOUNT_ID_KEY: ACCOUNT_ID, "exp": time.time() + 3600}, 'secret'),
+        "access_token": jwt.encode({api.AUTH_ACCOUNT_ID_KEY: ACCOUNT_ID, "exp": time.time() + 3600}, 'secret').decode(),
         "token_type": "Bearer",
         "refresh_token": "refresh1",
     })
@@ -37,7 +37,7 @@ async def test_login(api, aresponses):
 async def test_refresh_token(api, aresponses):
     login_token_expiration = api.token_expires_at
     aresponses.add(response={
-        "access_token": jwt.encode({api.AUTH_ACCOUNT_ID_KEY: ACCOUNT_ID, "exp": time.time() + 3601}, 'secret'),
+        "access_token": jwt.encode({api.AUTH_ACCOUNT_ID_KEY: ACCOUNT_ID, "exp": time.time() + 3601}, 'secret').decode(),
     })
     await api._refresh_token()
     assert api.token_expires_at > login_token_expiration
