@@ -19,9 +19,9 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        'aiohttp',
-        'pyjwt',
-        'python-dateutil',
+        'aiohttp>=3.0.0,<4.0.0',
+        'pyjwt>=1.0.0,<3.0.0',
+        'python-dateutil>=2.0.0,<3.0.0',
     ],
     # tests require python >=3.8
     tests_require=['pytest', 'pytest-asyncio', 'aresponses'],
