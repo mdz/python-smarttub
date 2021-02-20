@@ -142,6 +142,9 @@ class Account:
     async def get_spa(self, spa_id: str):
         return Spa(self._api, self, **await self._api.request('GET', f'spas/{spa_id}'))
 
+    def __str__(self):
+        return f'<Account {self.email}>'
+
 
 class Spa:
     SecondaryFiltrationMode = Enum('SecondaryFiltrationMode', 'FREQUENT INFREQUENT AWAY')
