@@ -18,8 +18,16 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    install_requires=[line for line in open('requirements.txt')],
-    # tests require python >=3.8
-    tests_require=[line for line in open('requirements_tests.txt')],
+    install_requires=[
+        "aiohttp~=3.7.3",
+        "pyjwt~=1.7.1",
+        "python-dateutil~=2.8.1",
+    ],
+    # Note: tests require python >=3.8
+    tests_require=[
+        "pytest",
+        "pytest-asyncio",
+        "aresponses",
+    ],
     python_requires='>=3.7',
 )
