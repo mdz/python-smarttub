@@ -67,7 +67,7 @@ async def info_command(spas, args):
 async def set_command(spas, args):
     for spa in spas:
         if args.temperature:
-            await spa.set_temperature(38.3)
+            await spa.set_temperature(args.temperature)
 
         if args.light_mode:
             for light in await spa.get_lights():
