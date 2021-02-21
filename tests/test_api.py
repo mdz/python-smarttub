@@ -8,6 +8,8 @@ import smarttub
 
 ACCOUNT_ID = 'account_id1'
 
+pytestmark = pytest.mark.asyncio
+
 
 @pytest.fixture(name='unauthenticated_api')
 async def unauthenticated_api(aresponses):
