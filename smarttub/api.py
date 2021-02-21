@@ -275,7 +275,7 @@ class SpaState:
         self._prop(
             "fieldsLastUpdated",
             constructor=lambda d: {
-                k: dateutil.parser.isoparse(v) for k, v in d.items()
+                k: dateutil.parser.isoparse(v) if v is not None else None for k, v in d.items()
             },
         )
         self._prop("flowSwitch")

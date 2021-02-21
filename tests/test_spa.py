@@ -32,7 +32,7 @@ async def test_get_status(mock_api, spa):
         "error": {"code": 0, "description": None, "title": "All Clear"},
         "errorCode": 0,
         "fieldsLastUpdated": {
-            "cfstEvent": "2021-02-21T07:24:06.414Z",
+            "cfstEvent": None,
             "errEvent": "2021-02-17T09:10:31.059Z",
             "heatMode": "2020-07-09T19:40:01.883Z",
             "locEvent": "2021-02-21T01:20:41.956Z",
