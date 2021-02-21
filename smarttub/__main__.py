@@ -14,7 +14,7 @@ async def info_command(spas, args):
     for spa in spas:
         print(f"= Spa '{spa.name}' =\n")
         if args.all or args.status or args.location:
-            status = await spa.get_status()
+            status = (await spa.get_status()).properties
             # redact location for privacy
             location = status.pop("location")
 
