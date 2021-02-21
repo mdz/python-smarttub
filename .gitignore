@@ -27,3 +27,4 @@ MANIFEST
 
 venv
 .tox
+.coverage
