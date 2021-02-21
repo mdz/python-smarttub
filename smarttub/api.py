@@ -330,7 +330,7 @@ class SpaPump:
 
 
 class SpaLight:
-    LightMode = Enum('LightMode', 'PURPLE ORANGE RED YELLOW GREEN AQUA BLUE HIGH_SPEED_WHEEL OFF')
+    LightMode = Enum('LightMode', 'PURPLE ORANGE RED YELLOW GREEN AQUA BLUE HIGH_SPEED_COLOR_WHEEL OFF')
 
     def __init__(self, spa: Spa, **properties):
         self.spa = spa
@@ -343,7 +343,7 @@ class SpaLight:
         self.white = color['white']
 
         self.intensity = properties['intensity']
-        self.mode = properties['mode']
+        self.mode = self.LightMode[properties['mode']]
         self.properties = properties
 
     async def set_mode(self, mode: LightMode, intensity: int):
@@ -359,7 +359,7 @@ class SpaLight:
         await self.set_mode(self.LightMode.OFF, 0)
 
     def __str__(self):
-        return f'<SpaLight {self.zone}: {self.red}/{self.green}/{self.blue}/{self.white}>'
+        return f'<SpaLight {self.zone}: {self.mode.name} (R {self.red}/G {self.green}/B {self.blue}/W {self.white})>'
 
 
 class SpaReminder:
