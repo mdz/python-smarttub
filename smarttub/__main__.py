@@ -59,9 +59,9 @@ async def info_command(spas, args):
 
         if args.all or args.debug:
             debug_status = await spa.get_debug_status()
-            print(f"== Debug status ==\n{debug_status}\n")
-
-        print()
+            print("== Debug status ==")
+            pprint(debug_status)
+            print()
 
 
 async def set_command(spas, args):
