@@ -278,7 +278,7 @@ class SpaState:
         self._prop('uv')
         self._prop('uvOnDemand')
         self._prop('versions')
-        self._prop('water')  # ?
+        self._prop('water', constructor=SpaWaterState)  # ?
         self._prop('watercare')
 
     def _prop(self, json_key, instance_variable_name=None, optional=True, constructor=None):
@@ -294,6 +294,15 @@ class SpaState:
 
     def __str__(self):
         return str(self.properties)
+
+
+class SpaWaterState(SpaState):
+    def __init__(self, spa: Spa, **properties):
+        self.spa = spa
+        self.properties = properties.copy()
+
+        self._prop("temperature")
+        self._prop("temperatureLastUpdated", constructor=dateutil.parser.isoparse)
 
 
 class SpaPrimaryFiltrationCycle(SpaState):
