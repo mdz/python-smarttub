@@ -7,13 +7,13 @@ This package provides an API for querying and controlling hot tubs using the Sma
 pip3 install python-smarttub
 ```
 
-# CLI
+## CLI
 ```
 python3 -m smarttub --help
 python3 -m smarttub -u SMARTTUB_EMAIL -p SMARTTUB_PASSWORD info --status
 ```
 
-# API
+## API
 ```
 from smarttub import SmartTub
 
