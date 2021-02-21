@@ -311,19 +311,22 @@ class Spa:
 
 
 class SpaPump:
+    PumpState = Enum('PumpState', 'OFF LOW HIGH')
+    PumpType = Enum('PumpType', 'CIRCULATION JET')
+
     def __init__(self, spa: Spa, **properties):
         self.spa = spa
         self.id = properties['id']
         self.speed = properties['speed']
-        self.state = properties['state']
-        self.type = properties['type']
+        self.state = self.PumpState[properties['state']]
+        self.type = self.PumpType[properties['type']]
         self.properties = properties
 
     async def toggle(self):
         await self.spa.request('POST', f'pumps/{self.id}/toggle')
 
     def __str__(self):
-        return f'<SpaPump {self.id}: {self.type}={self.state}>'
+        return f'<SpaPump {self.id}: {self.type.name}={self.state.name}>'
 
 
 class SpaLight:

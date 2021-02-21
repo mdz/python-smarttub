@@ -30,8 +30,8 @@ async def test_get_pumps(mock_api, spa):
         'pumps': [{
             'id': 'pid1',
             'speed': 'speed1',
-            'state': 'state1',
-            'type': 'type1',
+            'state': 'OFF',
+            'type': 'CIRCULATION',
         }]
     }
     pumps = await spa.get_pumps()
