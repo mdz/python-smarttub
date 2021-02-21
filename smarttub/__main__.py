@@ -25,7 +25,9 @@ async def info_command(spas, args):
 
         if args.location:
             # not included in --all
-            print(f"Location: {location['latitude']} {location['longitude']} (accuracy: {location['accuracy']})\n")
+            print(
+                f"Location: {location['latitude']} {location['longitude']} (accuracy: {location['accuracy']})\n"
+            )
 
         if args.all or args.pumps:
             print("== Pumps ==")
@@ -53,7 +55,11 @@ async def info_command(spas, args):
 
         if args.all or args.energy:
             print("== Energy usage ==")
-            energy_usage_day = spa.get_energy_usage(spa.EnergyUsageInterval.DAY, end_date=datetime.date.today(), start_date=datetime.date.today() - datetime.timedelta(days=7))
+            energy_usage_day = spa.get_energy_usage(
+                spa.EnergyUsageInterval.DAY,
+                end_date=datetime.date.today(),
+                start_date=datetime.date.today() - datetime.timedelta(days=7),
+            )
             pprint(await energy_usage_day)
             print()
 
@@ -82,17 +88,25 @@ async def set_command(spas, args):
 
 async def main(argv):
     parser = argparse.ArgumentParser()
-    parser.add_argument("-u", "--username", required=True, help="SmartTub account email")
-    parser.add_argument("-p", "--password", required=True, help="SmartTub account password")
+    parser.add_argument(
+        "-u", "--username", required=True, help="SmartTub account email"
+    )
+    parser.add_argument(
+        "-p", "--password", required=True, help="SmartTub account password"
+    )
     parser.add_argument("-v", "--verbosity", action="count", default=0)
     subparsers = parser.add_subparsers()
 
     info_parser = subparsers.add_parser("info", help="Show information about the spa")
     info_parser.set_defaults(func=info_command)
-    info_parser.add_argument("-a", "--all", action="store_true", help="Show all info except location")
+    info_parser.add_argument(
+        "-a", "--all", action="store_true", help="Show all info except location"
+    )
     info_parser.add_argument("--spas", action="store_true")
     info_parser.add_argument("--status", action="store_true")
-    info_parser.add_argument("--location", action="store_true", help="Show GPS location")
+    info_parser.add_argument(
+        "--location", action="store_true", help="Show GPS location"
+    )
     info_parser.add_argument("--pumps", action="store_true")
     info_parser.add_argument("--lights", action="store_true")
     info_parser.add_argument("--errors", action="store_true")
@@ -102,7 +116,9 @@ async def main(argv):
 
     set_parser = subparsers.add_parser("set", help="Change settings on the spa")
     set_parser.set_defaults(func=set_command)
-    set_parser.add_argument("-l", "--light_mode", choices=[mode.name for mode in SpaLight.LightMode])
+    set_parser.add_argument(
+        "-l", "--light_mode", choices=[mode.name for mode in SpaLight.LightMode]
+    )
     set_parser.add_argument("-t", "--temperature", type=float)
 
     args = parser.parse_args(argv)
@@ -122,5 +138,6 @@ async def main(argv):
 
         spas = await account.get_spas()
         await args.func(spas, args)
+
 
 asyncio.run(main(sys.argv[1:]))
