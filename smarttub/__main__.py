@@ -13,10 +13,19 @@ from . import SmartTub, SpaLight
 async def info_command(spas, args):
     for spa in spas:
         print(f"= Spa '{spa.name}' =\n")
+        if args.all or args.status or args.location:
+            status = await spa.get_status()
+            # redact location for privacy
+            location = status.pop("location")
+
         if args.all or args.status:
             print("== Status ==")
-            pprint(await spa.get_status())
+            pprint(status)
             print()
+
+        if args.location:
+            # not included in --all
+            print(f"Location: {location['latitude']} {location['longitude']} (accuracy: {location['accuracy']})\n")
 
         if args.all or args.pumps:
             print("== Pumps ==")
@@ -69,16 +78,17 @@ async def set_command(spas, args):
 
 async def main(argv):
     parser = argparse.ArgumentParser()
-    parser.add_argument("-u", "--username", required=True)
-    parser.add_argument("-p", "--password", required=True)
+    parser.add_argument("-u", "--username", required=True, help="SmartTub account email")
+    parser.add_argument("-p", "--password", required=True, help="SmartTub account password")
     parser.add_argument("-v", "--verbosity", action="count", default=0)
-
     subparsers = parser.add_subparsers()
-    info_parser = subparsers.add_parser("info")
+
+    info_parser = subparsers.add_parser("info", help="Show information about the spa")
     info_parser.set_defaults(func=info_command)
-    info_parser.add_argument("-a", "--all", action="store_true")
+    info_parser.add_argument("-a", "--all", action="store_true", help="Show all info except location")
     info_parser.add_argument("--spas", action="store_true")
     info_parser.add_argument("--status", action="store_true")
+    info_parser.add_argument("--location", action="store_true", help="Show GPS location")
     info_parser.add_argument("--pumps", action="store_true")
     info_parser.add_argument("--lights", action="store_true")
     info_parser.add_argument("--errors", action="store_true")
@@ -86,7 +96,7 @@ async def main(argv):
     info_parser.add_argument("--debug", action="store_true")
     info_parser.add_argument("--energy", action="store_true")
 
-    set_parser = subparsers.add_parser("set")
+    set_parser = subparsers.add_parser("set", help="Change settings on the spa")
     set_parser.set_defaults(func=set_command)
     set_parser.add_argument("-l", "--light_mode", choices=[mode.name for mode in SpaLight.LightMode])
     set_parser.add_argument("-t", "--temperature", type=float)
