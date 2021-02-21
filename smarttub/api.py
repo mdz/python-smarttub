@@ -263,8 +263,8 @@ class SpaState:
         self.spa = spa
         self.properties = properties.copy()
         self._prop("ambientTemperature")
-        self._prop("blowoutCycle", constructor=self.CycleStatus.__getitem__)
-        self._prop("cleanupCycle", constructor=self.CycleStatus.__getitem__)
+        self._prop("blowoutCycle", constructor=lambda x: self.CycleStatus[x])
+        self._prop("cleanupCycle", constructor=lambda x: self.CycleStatus[x])
         self._prop("current")
         self._prop("date", constructor=dateutil.parser.isoparse)
         self._prop("demoMode")
@@ -279,7 +279,7 @@ class SpaState:
             },
         )
         self._prop("flowSwitch")
-        self._prop("heatMode", constructor=self.HeatMode.__getitem__)
+        self._prop("heatMode", constructor=lambda x: self.HeatMode[x])
         self._prop("heater")
         self._prop("highTemperatureLimit")
         self._prop("lastUpdated", constructor=dateutil.parser.isoparse)
@@ -288,8 +288,8 @@ class SpaState:
         self._prop("locks")
         self._prop("online")
         self._prop("ozone")
-        self._prop("primaryFiltration", constructor=SpaPrimaryFiltrationCycle)
-        self._prop("secondaryFiltration", constructor=SpaSecondaryFiltrationCycle)
+        self._prop("primaryFiltration", constructor=lambda p: SpaPrimaryFiltrationCycle(self, **p))
+        self._prop("secondaryFiltration", constructor=lambda p: SpaSecondaryFiltrationCycle(self, **p))
         self._prop("setTemperature")
         self._prop("state")
         self._prop("time", constructor=datetime.time.fromisoformat)
@@ -299,7 +299,7 @@ class SpaState:
         self._prop("uv")
         self._prop("uvOnDemand")
         self._prop("versions")
-        self._prop("water", constructor=SpaWaterState)  # ?
+        self._prop("water", constructor=lambda p: SpaWaterState(self, **p))
         self._prop("watercare")
 
     def _prop(
@@ -339,10 +339,10 @@ class SpaPrimaryFiltrationCycle(SpaState):
 
         self._prop("cycle")
         self._prop("duration")
-        self._prop("lastUpdated", constructor=datetime.datetime.fromisoformat)
-        self._prop("mode", constructor=self.PrimaryFiltrationMode)
+        self._prop("lastUpdated", constructor=dateutil.parser.isoparse)
+        self._prop("mode", constructor=lambda x: self.PrimaryFiltrationMode[x])
         self._prop("startHour")
-        self._prop("status", constructor=self.CycleStatus)
+        self._prop("status", constructor=lambda x: self.CycleStatus[x])
 
         # TODO: set
 
@@ -356,9 +356,9 @@ class SpaSecondaryFiltrationCycle(SpaState):
         self.spa = spa
         self.properties = properties.copy()
 
-        self._prop("lastUpdated", constructor=datetime.datetime.fromisoformat)
-        self._prop("mode", constructor=self.SecondaryFiltrationMode)
-        self._prop("status", constructor=self.CycleStatus)
+        self._prop("lastUpdated", constructor=dateutil.parser.isoparse)
+        self._prop("mode", constructor=lambda x: self.SecondaryFiltrationMode[x])
+        self._prop("status", constructor=lambda x: self.CycleStatus[x])
 
     async def set_mode(self, mode: SecondaryFiltrationMode):
         body = {"secondaryFiltrationConfig": mode.name}
