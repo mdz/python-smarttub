@@ -355,6 +355,9 @@ class SpaLight:
         }
         await self.spa.request('PATCH', f'lights/{self.zone}', body)
 
+    async def turn_off(self):
+        await self.set_mode(self.LightMode.OFF, 0)
+
     def __str__(self):
         return f'<SpaLight {self.zone}: {self.red}/{self.green}/{self.blue}/{self.white}>'
 
