@@ -7,6 +7,7 @@ from typing import List
 
 import aiohttp
 import dateutil.parser
+from inflection import underscore
 import jwt
 
 logger = logging.getLogger(__name__)
@@ -165,75 +166,9 @@ class Spa:
     async def request(self, method, resource: str, body=None):
         return await self._api.request(method, f'spas/{self.id}/{resource}', body)
 
-    async def get_status(self) -> dict:
-        """Query the status of the spa.
-
-        Example response:
-
-        {'ambientTemperature': 65.6,
-         'blowoutCycle': 'INACTIVE',
-         'cleanupCycle': 'INACTIVE',
-         'current': {'average': 0.0, 'kwh': 0.48, 'max': 0.0, 'min': 0.0, 'value': 0.0},
-         'date': '2021-02-17',
-         'demoMode': 'DISABLED',
-         'dipSwitches': 8,
-         'displayTemperatureFormat': 'FAHRENHEIT',
-         'error': {'code': 0, 'description': None, 'title': 'All Clear'},
-         'errorCode': 0,
-         'fieldsLastUpdated': {'cfstEvent': '2021-02-17T07:24:32.010Z',
-                               'errEvent': '2021-02-17T09:10:31.059Z',
-                               'heatMode': '2020-07-09T19:40:01.883Z',
-                               'locEvent': '2021-02-14T01:12:05.980Z',
-                               'online': '2021-02-17T16:59:15.785Z',
-                               'rpstEvent': '2021-02-17T15:33:44.539Z',
-                               'setTemperature': '2021-02-16T17:54:01.511Z',
-                               'sp2stEvent': '2021-02-17T07:24:34.019Z',
-                               'spstEvent': '2021-02-17T16:44:26.266Z',
-                               'uv': '2021-02-17T06:52:47.019Z',
-                               'uvOnDemand': '2021-02-13T04:36:06.268Z',
-                               'wcstEvent': '2021-02-17T16:54:29.315Z'},
-         'flowSwitch': 'OPEN',
-         'heatMode': 'AUTO',
-         'heater': 'OFF',
-         'highTemperatureLimit': 35.6,
-         'lastUpdated': '2021-02-17T16:54:29.443Z',
-         'lights': None,
-         'location': {'accuracy': 823.0,
-                      'latitude': 35.123456,
-                      'longitude': -120.123456},
-         'locks': {'access': 'UNLOCKED',
-                   'maintenance': 'UNLOCKED',
-                   'spa': 'UNLOCKED',
-                   'temperature': 'UNLOCKED'},
-         'online': True,
-         'ozone': 'OFF',
-         'primaryFiltration': {'cycle': 1,
-                               'duration': 4,
-                               'lastUpdated': '2021-01-20T11:38:57.014Z',
-                               'mode': 'NORMAL',
-                               'startHour': 2,
-                               'status': 'INACTIVE'},
-         'pumps': None,
-         'secondaryFiltration': {'lastUpdated': '2020-07-09T19:39:52.961Z',
-                                 'mode': 'AWAY',
-                                 'status': 'INACTIVE'},
-         'setTemperature': 38.3,
-         'state': 'NORMAL',
-         'time': '00:36:00',
-         'timeFormat': 'HOURS_12',
-         'timeSet': None,
-         'timezone': None,
-         'uv': 'OFF',
-         'uvOnDemand': 'OFF',
-         'versions': {'balboa': '1.06', 'controller': '1.28', 'jacuzziLink': '53'},
-         'water': {'oxidationReductionPotential': 604,
-                   'ph': 7.01,
-                   'temperature': 38.3,
-                   'temperatureLastUpdated': '2021-02-17T14:15:26.694Z',
-                   'turbidity': 0.01},
-         'watercare': None}
-        """
-        return await self.request('GET', 'status')
+    async def get_status(self) -> 'SpaState':
+        """Query the status of the spa."""
+        return SpaState(self, **await self.request('GET', 'status'))
 
     async def get_pumps(self) -> List['SpaPump']:
         return [SpaPump(self, **pump_info)
@@ -262,12 +197,6 @@ class Spa:
             "interval": interval.name,
         }
         return (await self.request('POST', 'energyUsage', body))['buckets']
-
-    async def set_secondary_filtration_mode(self, mode: SecondaryFiltrationMode):
-        body = {
-            'secondaryFiltrationConfig': mode.name
-        }
-        await self.request('PATCH', 'config', body)
 
     async def set_heat_mode(self, mode: HeatMode):
         body = {
@@ -308,6 +237,107 @@ class Spa:
 
     def __str__(self):
         return f'<Spa {self.id}>'
+
+
+class SpaState:
+    CycleStatus = Enum('CycleStatus', 'INACTIVE ACTIVE')
+    HeatMode = Enum('HeatMode', 'AUTO ECO DAY')
+
+    def __init__(self, spa: Spa, **properties):
+        self.spa = spa
+        self.properties = properties.copy()
+        self._prop('ambientTemperature')
+        self._prop('blowoutCycle', constructor=self.CycleStatus.__getitem__)
+        self._prop('cleanupCycle', constructor=self.CycleStatus.__getitem__)
+        self._prop('current')
+        self._prop('date', constructor=dateutil.parser.isoparse)
+        self._prop('demoMode')
+        self._prop('dipSwitches')
+        self._prop('displayTemperatureFormat')
+        self._prop('error')
+        self._prop('errorCode')
+        self._prop('fieldsLastUpdated', constructor=lambda d: {k: dateutil.parser.isoparse(v) for k, v in d.items()})
+        self._prop('flowSwitch')
+        self._prop('heatMode', constructor=self.HeatMode.__getitem__)
+        self._prop('heater')
+        self._prop('highTemperatureLimit')
+        self._prop('lastUpdated', constructor=dateutil.parser.isoparse)
+        self._prop('lights')  # seems to be None even when there are lights?
+        self._prop('location')
+        self._prop('locks')
+        self._prop('online')
+        self._prop('ozone')
+        self._prop('primaryFiltration', constructor=SpaPrimaryFiltrationCycle)
+        self._prop('secondaryFiltration', constructor=SpaSecondaryFiltrationCycle)
+        self._prop('setTemperature')
+        self._prop('state')
+        self._prop('time', constructor=datetime.time.fromisoformat)
+        self._prop('timeFormat')
+        self._prop('timeSet')  # ?
+        self._prop('timezone')  # ?
+        self._prop('uv')
+        self._prop('uvOnDemand')
+        self._prop('versions')
+        self._prop('water', constructor=SpaWaterState)  # ?
+        self._prop('watercare')
+
+    def _prop(self, json_key, instance_variable_name=None, optional=True, constructor=None):
+        if instance_variable_name is None:
+            instance_variable_name = underscore(json_key)
+        if json_key in self.properties:
+            if constructor is None:
+                setattr(self, instance_variable_name, self.properties[json_key])
+            else:
+                setattr(self, instance_variable_name, constructor(self.properties[json_key]))
+        else:
+            setattr(self, instance_variable_name, None)
+
+    def __str__(self):
+        return str(self.properties)
+
+
+class SpaWaterState(SpaState):
+    def __init__(self, spa: Spa, **properties):
+        self.spa = spa
+        self.properties = properties.copy()
+
+        self._prop("temperature")
+        self._prop("temperatureLastUpdated", constructor=dateutil.parser.isoparse)
+
+
+class SpaPrimaryFiltrationCycle(SpaState):
+    PrimaryFiltrationMode = Enum('PrimaryFiltrationMode', 'NORMAL')
+
+    def __init__(self, spa: Spa, **properties):
+        self.spa = spa
+        self.properties = properties.copy()
+
+        self._prop('cycle')
+        self._prop('duration')
+        self._prop('lastUpdated', constructor=datetime.datetime.fromisoformat)
+        self._prop('mode', constructor=self.PrimaryFiltrationMode)
+        self._prop('startHour')
+        self._prop('status', constructor=self.CycleStatus)
+
+        # TODO: set
+
+
+class SpaSecondaryFiltrationCycle(SpaState):
+    SecondaryFiltrationMode = Enum('SecondaryFiltrationMode', 'AWAY FREQUENT INFREQUENT')
+
+    def __init__(self, spa: Spa, **properties):
+        self.spa = spa
+        self.properties = properties.copy()
+
+        self._prop('lastUpdated', constructor=datetime.datetime.fromisoformat)
+        self._prop('mode', constructor=self.SecondaryFiltrationMode)
+        self._prop('status', constructor=self.CycleStatus)
+
+    async def set_mode(self, mode: SecondaryFiltrationMode):
+        body = {
+            'secondaryFiltrationConfig': mode.name
+        }
+        await self.spa.request('PATCH', 'config', body)
 
 
 class SpaPump:
