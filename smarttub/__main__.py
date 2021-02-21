@@ -71,9 +71,13 @@ async def set_command(spas, args):
 
         if args.light_mode:
             for light in await spa.get_lights():
-                await light.set_mode(light.LightModes[args.lights], 25)
                 if args.verbosity > 0:
                     print(light)
+                mode = light.LightMode[args.light_mode]
+                if mode == light.LightMode.OFF:
+                    await light.set_mode(mode, 0)
+                else:
+                    await light.set_mode(mode, 50)
 
 
 async def main(argv):
