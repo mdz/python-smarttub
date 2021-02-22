@@ -257,7 +257,6 @@ class Spa:
 
 class SpaState:
     CycleStatus = Enum("CycleStatus", "INACTIVE ACTIVE")
-    HeatMode = Enum("HeatMode", "AUTO ECO DAY")
 
     def __init__(self, spa: Spa, **properties):
         self.spa = spa
@@ -279,7 +278,7 @@ class SpaState:
             },
         )
         self._prop("flowSwitch")
-        self._prop("heatMode", constructor=lambda x: self.HeatMode[x])
+        self._prop("heatMode", constructor=lambda x: Spa.HeatMode[x])
         self._prop("heater")
         self._prop("highTemperatureLimit")
         self._prop("lastUpdated", constructor=dateutil.parser.isoparse)
