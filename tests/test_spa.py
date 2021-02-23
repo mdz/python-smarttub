@@ -95,6 +95,26 @@ async def test_get_status(mock_api, spa):
     status = await spa.get_status()
     assert status.state == "NORMAL"
 
+    pf = status.primary_filtration
+    assert pf.mode == status.primary_filtration.PrimaryFiltrationMode.NORMAL
+    assert pf.duration == 4
+    assert pf.start_hour == 2
+    assert pf.status == status.CycleStatus.INACTIVE
+
+    await pf.set(start_hour=5)
+    mock_api.request.assert_called_with(
+        "PATCH",
+        f"spas/{spa.id}/config",
+        body={
+            "primaryFiltrationConfig": {
+                "cycle": pf.cycle,
+                "duration": pf.duration,
+                "mode": pf.mode.name,
+                "startHour": 5,
+            }
+        },
+    )
+
 
 async def test_get_pumps(mock_api, spa):
     mock_api.request.return_value = {

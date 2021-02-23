@@ -287,8 +287,8 @@ class SpaState:
         self._prop("locks")
         self._prop("online")
         self._prop("ozone")
-        self._prop("primaryFiltration", constructor=lambda p: SpaPrimaryFiltrationCycle(self, **p))
-        self._prop("secondaryFiltration", constructor=lambda p: SpaSecondaryFiltrationCycle(self, **p))
+        self._prop("primaryFiltration", constructor=lambda p: SpaPrimaryFiltrationCycle(self.spa, **p))
+        self._prop("secondaryFiltration", constructor=lambda p: SpaSecondaryFiltrationCycle(self.spa, **p))
         self._prop("setTemperature")
         self._prop("state")
         self._prop("time", constructor=datetime.time.fromisoformat)
@@ -298,7 +298,7 @@ class SpaState:
         self._prop("uv")
         self._prop("uvOnDemand")
         self._prop("versions")
-        self._prop("water", constructor=lambda p: SpaWaterState(self, **p))
+        self._prop("water", constructor=lambda p: SpaWaterState(self.spa, **p))
         self._prop("watercare")
 
     def _prop(
@@ -343,7 +343,14 @@ class SpaPrimaryFiltrationCycle(SpaState):
         self._prop("startHour")
         self._prop("status", constructor=lambda x: self.CycleStatus[x])
 
-        # TODO: set
+    async def set(self, cycle=None, duration=None, mode=None, start_hour=None):
+        body = {"primaryFiltrationConfig": {
+            "cycle": cycle if cycle is not None else self.cycle,
+            "duration": duration if duration is not None else self.duration,
+            "mode": mode.name if mode is not None else self.mode.name,
+            "startHour": start_hour if start_hour is not None else self.start_hour,
+        }}
+        await self.spa.request("PATCH", "config", body)
 
 
 class SpaSecondaryFiltrationCycle(SpaState):
