@@ -274,7 +274,8 @@ class SpaState:
         self._prop(
             "fieldsLastUpdated",
             constructor=lambda d: {
-                k: dateutil.parser.isoparse(v) if v is not None else None for k, v in d.items()
+                k: dateutil.parser.isoparse(v) if v is not None else None
+                for k, v in d.items()
             },
         )
         self._prop("flowSwitch")
@@ -287,8 +288,14 @@ class SpaState:
         self._prop("locks")
         self._prop("online")
         self._prop("ozone")
-        self._prop("primaryFiltration", constructor=lambda p: SpaPrimaryFiltrationCycle(self.spa, **p))
-        self._prop("secondaryFiltration", constructor=lambda p: SpaSecondaryFiltrationCycle(self.spa, **p))
+        self._prop(
+            "primaryFiltration",
+            constructor=lambda p: SpaPrimaryFiltrationCycle(self.spa, **p),
+        )
+        self._prop(
+            "secondaryFiltration",
+            constructor=lambda p: SpaSecondaryFiltrationCycle(self.spa, **p),
+        )
         self._prop("setTemperature")
         self._prop("state")
         self._prop("time", constructor=datetime.time.fromisoformat)
@@ -344,12 +351,14 @@ class SpaPrimaryFiltrationCycle(SpaState):
         self._prop("status", constructor=lambda x: self.CycleStatus[x])
 
     async def set(self, cycle=None, duration=None, mode=None, start_hour=None):
-        body = {"primaryFiltrationConfig": {
-            "cycle": cycle if cycle is not None else self.cycle,
-            "duration": duration if duration is not None else self.duration,
-            "mode": mode.name if mode is not None else self.mode.name,
-            "startHour": start_hour if start_hour is not None else self.start_hour,
-        }}
+        body = {
+            "primaryFiltrationConfig": {
+                "cycle": cycle if cycle is not None else self.cycle,
+                "duration": duration if duration is not None else self.duration,
+                "mode": mode.name if mode is not None else self.mode.name,
+                "startHour": start_hour if start_hour is not None else self.start_hour,
+            }
+        }
         await self.spa.request("PATCH", "config", body)
 
 

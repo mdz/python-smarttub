@@ -30,5 +30,5 @@ setuptools.setup(
         "pytest-asyncio",
         "aresponses",
     ],
-    python_requires='>=3.7',
+    python_requires=">=3.7",
 )
