@@ -154,9 +154,6 @@ class Account:
 
 
 class Spa:
-    SecondaryFiltrationMode = Enum(
-        "SecondaryFiltrationMode", "FREQUENT INFREQUENT AWAY"
-    )
     HeatMode = Enum("HeatMode", "ECONOMY DAY AUTO")
     TemperatureFormat = Enum("TemperatureFormat", "FAHRENHEIT CELSIUS")
     EnergyUsageInterval = Enum("EnergyUsageInterval", "DAY MONTH")
