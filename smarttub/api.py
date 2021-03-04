@@ -448,7 +448,7 @@ class SpaReminder:
     # TODO: snoozing
 
     def __str__(self):
-        return f"<SpaReminder {self.id}>"
+        return f"<SpaReminder {self.id}: {self.state}/{self.remaining_days}/{self.snoozed}>"
 
 
 class SpaError:
