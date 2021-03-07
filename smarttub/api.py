@@ -442,7 +442,13 @@ class SpaReminder:
         self.snoozed = properties["snoozed"]
         self.state = properties["state"]
 
-    # TODO: snoozing
+    async def snooze(self, days: int):
+        body = {"remainingDuration": days}
+        await self.spa.request("PATCH", f"reminders/{self.id}", body)
+
+    async def reset(self, days: int):
+        body = {"remainingDuration": days, "reset": True}
+        await self.spa.request("PATCH", f"reminders/{self.id}", body)
 
     def __str__(self):
         return f"<SpaReminder {self.id}: {self.state}/{self.remaining_days}/{self.snoozed}>"
