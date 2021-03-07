@@ -113,11 +113,13 @@ class SmartTub:
             raise APIError(e)
 
         if int(r.headers["content-length"]) == 0:
-            return None
-        j = await r.json()
+            ret = None
+        else:
+            ret = await r.json()
 
-        logger.debug(f"{method} {path} successful: {j}")
-        return j
+        logger.debug(f"{method} {path} successful: {ret}")
+
+        return ret
 
     async def get_account(self) -> "Account":
         """Retrieve the SmartTub account of the authenticated user"""
@@ -442,7 +444,13 @@ class SpaReminder:
         self.snoozed = properties["snoozed"]
         self.state = properties["state"]
 
-    # TODO: snoozing
+    async def snooze(self, days: int):
+        body = {"remainingDuration": days}
+        await self.spa.request("PATCH", f"reminders/{self.id}", body)
+
+    async def reset(self, days: int):
+        body = {"remainingDuration": days, "reset": True}
+        await self.spa.request("PATCH", f"reminders/{self.id}", body)
 
     def __str__(self):
         return f"<SpaReminder {self.id}: {self.state}/{self.remaining_days}/{self.snoozed}>"
