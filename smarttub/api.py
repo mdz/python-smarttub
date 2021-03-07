@@ -203,6 +203,7 @@ class Spa:
         ]
 
     async def get_status_full(self) -> "SpaStateFull":
+        """Retrieves the state of lights and pumps in addition to what get_status does."""
         full_status = await self.request("GET", "fullStatus")
         return SpaStateFull(self, full_status)
 
