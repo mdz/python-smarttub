@@ -202,6 +202,11 @@ class Spa:
             for reminder_info in (await self.request("GET", "reminders"))["reminders"]
         ]
 
+    async def get_status_full(self) -> "SpaStateFull":
+        """Retrieves the state of lights and pumps in addition to what get_status does."""
+        full_status = await self.request("GET", "fullStatus")
+        return SpaStateFull(self, full_status)
+
     async def get_debug_status(self) -> dict:
         return (await self.request("GET", "debugStatus"))["debugStatus"]
 
@@ -324,6 +329,17 @@ class SpaState:
 
     def __str__(self):
         return f"<{self.__name__}: {self.properties}>"
+
+
+class SpaStateFull(SpaState):
+    def __init__(self, spa: Spa, state: dict):
+        super().__init__(self, **state)
+        self.lights = [
+            SpaLight(spa, **light_props) for light_props in self.properties["lights"]
+        ]
+        self.pumps = [
+            SpaPump(spa, **pump_props) for pump_props in self.properties["pumps"]
+        ]
 
 
 class SpaWaterState(SpaState):
