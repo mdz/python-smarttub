@@ -5,7 +5,7 @@ with open("README.md", "r") as f:
 
 setuptools.setup(
     name="python-smarttub",
-    version="0.0.20",
+    version="0.0.21",
     author="Matt Zimmerman",
     author_email="mdz@alcor.net",
     description="API to query and control hot tubs using the SmartTub system",
