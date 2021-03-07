@@ -85,6 +85,16 @@ async def set_command(spas, args):
                 else:
                     await light.set_mode(mode, 50)
 
+        if args.snooze_reminder:
+            reminder_id, days = args.snooze_reminder
+            days = int(days)
+            reminder = next(
+                reminder
+                for reminder in await spa.get_reminders()
+                if reminder.id == reminder_id
+            )
+            await reminder.snooze(days)
+
 
 async def main(argv):
     parser = argparse.ArgumentParser()
@@ -120,6 +130,13 @@ async def main(argv):
         "-l", "--light_mode", choices=[mode.name for mode in SpaLight.LightMode]
     )
     set_parser.add_argument("-t", "--temperature", type=float)
+    # TODO: should enforce types of str, int
+    set_parser.add_argument(
+        "--snooze-reminder",
+        nargs=2,
+        help="Snooze a reminder",
+        metavar=("REMINDER_ID", "DAYS"),
+    )
 
     args = parser.parse_args(argv)
 

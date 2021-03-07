@@ -113,11 +113,13 @@ class SmartTub:
             raise APIError(e)
 
         if int(r.headers["content-length"]) == 0:
-            return None
-        j = await r.json()
+            ret = None
+        else:
+            ret = await r.json()
 
-        logger.debug(f"{method} {path} successful: {j}")
-        return j
+        logger.debug(f"{method} {path} successful: {ret}")
+
+        return ret
 
     async def get_account(self) -> "Account":
         """Retrieve the SmartTub account of the authenticated user"""
