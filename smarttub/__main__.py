@@ -95,6 +95,16 @@ async def set_command(spas, args):
             )
             await reminder.snooze(days)
 
+        if args.reset_reminder:
+            reminder_id, days = args.reset_reminder
+            days = int(days)
+            reminder = next(
+                reminder
+                for reminder in await spa.get_reminders()
+                if reminder.id == reminder_id
+            )
+            await reminder.reset(days)
+
 
 async def main(argv):
     parser = argparse.ArgumentParser()
@@ -135,6 +145,13 @@ async def main(argv):
         "--snooze-reminder",
         nargs=2,
         help="Snooze a reminder",
+        metavar=("REMINDER_ID", "DAYS"),
+    )
+    # TODO: should enforce types of str, int
+    set_parser.add_argument(
+        "--reset-reminder",
+        nargs=2,
+        help="Reset a reminder",
         metavar=("REMINDER_ID", "DAYS"),
     )
 
