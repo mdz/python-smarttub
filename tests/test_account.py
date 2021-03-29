@@ -10,6 +10,10 @@ def account(mock_api):
     return smarttub.Account(mock_api, id="id1", email="email1")
 
 
+async def test_account(account):
+    assert str(account)
+
+
 async def test_get_spas(mock_api, account):
     mock_api.request.side_effect = [
         {"content": [{"id": "sid1"}]},

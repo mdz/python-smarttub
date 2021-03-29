@@ -329,7 +329,7 @@ class SpaState:
             setattr(self, instance_variable_name, None)
 
     def __str__(self):
-        return f"<{self.__name__}: {self.properties}>"
+        return f"<{self.__class__.__name__}: {self.properties}>"
 
 
 class SpaStateFull(SpaState):

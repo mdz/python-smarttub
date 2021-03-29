@@ -21,6 +21,10 @@ def spa(mock_api, mock_account):
     return spa
 
 
+async def test_spa(spa):
+    assert str(spa)
+
+
 async def test_get_status(mock_api, spa):
     mock_api.request.return_value = {
         "ambientTemperature": 65.6,
@@ -96,6 +100,7 @@ async def test_get_status(mock_api, spa):
 
     status = await spa.get_status()
     assert status.state == "NORMAL"
+    assert str(status)
 
     pf = status.primary_filtration
     assert pf.mode == status.primary_filtration.PrimaryFiltrationMode.NORMAL
@@ -376,6 +381,10 @@ async def test_set_date_time(mock_api, spa):
     await spa.set_date_time(date=datetime.date(2021, 1, 1))
     mock_api.request.assert_called_with(
         "POST", f"spas/{spa.id}/config", {"dateTimeConfig": {"date": "2021-01-01"}}
+    )
+    await spa.set_date_time(time=datetime.time(12, 45))
+    mock_api.request.assert_called_with(
+        "POST", f"spas/{spa.id}/config", {"dateTimeConfig": {"time": "12:45"}}
     )
 
 
