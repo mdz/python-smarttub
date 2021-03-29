@@ -1,0 +1,2 @@
+[run]
+omit = smarttub/__main__.py

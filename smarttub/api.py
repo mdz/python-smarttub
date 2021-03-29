@@ -234,7 +234,7 @@ class Spa:
         }
         await self.request("PATCH", "config", body)
 
-    async def toggle_clearray(self, str):
+    async def toggle_clearray(self):
         await self.request("POST", "clearray/toggle")
 
     async def set_temperature_format(self, temperature_format: TemperatureFormat):
@@ -246,14 +246,15 @@ class Spa:
     ):
         """Set the spa date, time, or both"""
 
-        assert date is not None or time is not None
+        if date is None and time is None:
+            raise ValueError("at least one of date or time must be specified")
         config = {}
         if date is not None:
             config["date"] = date.isoformat()
         if time is not None:
             config["time"] = time.isoformat("minutes")
         body = {"dateTimeConfig": config}
-        await self.request("POST", body)
+        await self.request("POST", "config", body)
 
     def __str__(self):
         return f"<Spa {self.id}>"
@@ -328,7 +329,7 @@ class SpaState:
             setattr(self, instance_variable_name, None)
 
     def __str__(self):
-        return f"<{self.__name__}: {self.properties}>"
+        return f"<{self.__class__.__name__}: {self.properties}>"
 
 
 class SpaStateFull(SpaState):
