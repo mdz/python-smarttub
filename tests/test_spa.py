@@ -358,3 +358,10 @@ async def test_set_temperature(mock_api, spa):
 async def test_toggle_clearray(mock_api, spa):
     await spa.toggle_clearray()
     mock_api.request.assert_called_with("POST", f"spas/{spa.id}/clearray/toggle", None)
+
+
+async def test_set_temperature_format(mock_api, spa):
+    await spa.set_temperature_format(smarttub.Spa.TemperatureFormat.FAHRENHEIT)
+    mock_api.request.assert_called_with(
+        "POST", f"spas/{spa.id}/config", {"displayTemperatureFormat": "FAHRENHEIT"}
+    )
