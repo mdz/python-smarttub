@@ -318,3 +318,24 @@ async def test_get_reminders(mock_api, spa):
     reminder = reminders[0]
     assert reminder.id == "id1"
     assert reminder.name == "name1"
+
+
+async def test_get_debug_status(mock_api, spa):
+    mock_api.request.return_value = {
+        "debugStatus": {
+            "battery": {"percentCharge": 82.2, "voltage": 4.04},
+            "freeMemory": 45520,
+            "lastResetReason": "RESET_REASON_USER",
+            "powerStatus": "DC",
+            "resetCount": 133,
+            "signal": {"quality": 37, "strength": -89},
+            "uptime": {
+                "connection": 2059053,
+                "system": 2059161,
+                "tubController": 2059159,
+            },
+        }
+    }
+
+    debug_status = await spa.get_debug_status()
+    assert debug_status is not None

@@ -73,3 +73,9 @@ async def test_get_account(api, aresponses):
     account = await api.get_account()
     assert account.id == "id1"
     assert account.email == "email1"
+
+
+async def test_api_error(api, aresponses):
+    aresponses.add(response=aresponses.Response(status=500))
+    with pytest.raises(smarttub.APIError):
+        await api.get_account()
