@@ -1,4 +1,5 @@
 import datetime
+from dateutil.tz import tzutc
 from unittest.mock import create_autospec
 
 import pytest
@@ -376,3 +377,21 @@ async def test_set_date_time(mock_api, spa):
     mock_api.request.assert_called_with(
         "POST", f"spas/{spa.id}/config", {"dateTimeConfig": {"date": "2021-01-01"}}
     )
+
+
+async def test_secondary_filtration_cycle(mock_api, spa):
+    cycle = smarttub.SpaSecondaryFiltrationCycle(
+        spa,
+        **{
+            "lastUpdated": "2020-07-09T19:39:52.961Z",
+            "mode": "AWAY",
+            "status": "INACTIVE",
+        },
+    )
+    assert cycle.last_updated == datetime.datetime(
+        2020, 7, 9, 19, 39, 52, 961000, tzinfo=tzutc()
+    )
+    assert (
+        cycle.mode == smarttub.SpaSecondaryFiltrationCycle.SecondaryFiltrationMode.AWAY
+    )
+    assert cycle.status == smarttub.SpaSecondaryFiltrationCycle.CycleStatus.INACTIVE
