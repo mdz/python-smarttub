@@ -9,9 +9,13 @@ pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture
-def lights(mock_api):
+def spa():
     spa = create_autospec(smarttub.Spa, instance=True)
-    spa.request = mock_api.request
+    return spa
+
+
+@pytest.fixture
+def lights(spa):
     lights = [
         SpaLight(
             spa,
@@ -20,12 +24,17 @@ def lights(mock_api):
                 "intensity": 0 if mode == SpaLight.LightMode.OFF else 50,
                 "mode": mode.name,
                 "zone": i + 1,
-            }
+            },
         )
         for i, mode in enumerate(SpaLight.LightMode)
     ]
     return lights
 
 
-async def test_light(lights):
-    pass
+async def test_light(spa, lights):
+    purple = lights[0]
+    assert purple.mode == SpaLight.LightMode.PURPLE
+    await purple.set_mode(SpaLight.LightMode.RED, 50)
+    purple.spa.request.assert_called_with(
+        "PATCH", f"lights/{purple.zone}", {"intensity": 50, "mode": "RED"}
+    )
