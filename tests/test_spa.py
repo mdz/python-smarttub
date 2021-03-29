@@ -346,3 +346,10 @@ async def test_set_heat_mode(mock_api, spa):
     mock_api.request.assert_called_with(
         "PATCH", f"spas/{spa.id}/config", {"heatMode": "AUTO"}
     )
+
+
+async def test_set_temperature(mock_api, spa):
+    await spa.set_temperature(38.3)
+    mock_api.request.assert_called_with(
+        "PATCH", f"spas/{spa.id}/config", {"setTemperature": 38.3}
+    )
