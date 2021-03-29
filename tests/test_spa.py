@@ -339,3 +339,10 @@ async def test_get_debug_status(mock_api, spa):
 
     debug_status = await spa.get_debug_status()
     assert debug_status is not None
+
+
+async def test_set_heat_mode(mock_api, spa):
+    await spa.set_heat_mode(smarttub.Spa.HeatMode.AUTO)
+    mock_api.request.assert_called_with(
+        "PATCH", f"spas/{spa.id}/config", {"heatMode": "AUTO"}
+    )
