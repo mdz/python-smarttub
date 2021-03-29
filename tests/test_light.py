@@ -38,3 +38,7 @@ async def test_light(spa, lights):
     purple.spa.request.assert_called_with(
         "PATCH", f"lights/{purple.zone}", {"intensity": 50, "mode": "RED"}
     )
+    await purple.turn_off()
+    purple.spa.request.assert_called_with(
+        "PATCH", f"lights/{purple.zone}", {"intensity": 0, "mode": "OFF"}
+    )
