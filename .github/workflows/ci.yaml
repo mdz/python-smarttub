@@ -5,8 +5,7 @@ jobs:
   build:
     strategy:
       matrix:
-        # tests require >=3.8, though the code itself should work on 3.7 and possibly even 3.6?
-        python-version: [3.8]
+        python-version: [3.8, 3.9]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
