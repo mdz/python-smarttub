@@ -1,3 +1,4 @@
+import datetime
 from unittest.mock import create_autospec
 
 import pytest
@@ -364,4 +365,14 @@ async def test_set_temperature_format(mock_api, spa):
     await spa.set_temperature_format(smarttub.Spa.TemperatureFormat.FAHRENHEIT)
     mock_api.request.assert_called_with(
         "POST", f"spas/{spa.id}/config", {"displayTemperatureFormat": "FAHRENHEIT"}
+    )
+
+
+async def test_set_date_time(mock_api, spa):
+    with pytest.raises(ValueError):
+        await spa.set_date_time()
+
+    await spa.set_date_time(date=datetime.date(2021, 1, 1))
+    mock_api.request.assert_called_with(
+        "POST", f"spas/{spa.id}/config", {"dateTimeConfig": {"date": "2021-01-01"}}
     )
