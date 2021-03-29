@@ -484,6 +484,9 @@ class SpaError:
         self.active = properties["active"]
         self.error_type = properties["errorType"]
 
+    def test_coverage():
+        fail()
+
     def __str__(self):
         return f"<SpaError {self.title}>"
 
