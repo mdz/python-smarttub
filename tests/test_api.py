@@ -39,18 +39,27 @@ async def test_login(api, aresponses):
     assert api.logged_in is True
 
 
+async def test_login_failed(api, aresponses):
+    aresponses.add(response=aresponses.Response(status=403))
+    with pytest.raises(smarttub.LoginFailed):
+        await api.login("username", "password")
+
+
 async def test_refresh_token(api, aresponses):
-    login_token_expiration = api.token_expires_at
+    now = time.time()
+    api.token_expires_at = now
     aresponses.add(
         response={
             "access_token": jwt.encode(
-                {api.AUTH_ACCOUNT_ID_KEY: ACCOUNT_ID, "exp": time.time() + 3601},
+                {api.AUTH_ACCOUNT_ID_KEY: ACCOUNT_ID, "exp": now + 3601},
                 "secret",
             ).decode(),
         }
     )
-    await api._refresh_token()
-    assert api.token_expires_at > login_token_expiration
+    aresponses.add(response={"status": "OK"})
+    response = await api.request("GET", "/")
+    assert api.token_expires_at > now
+    assert response.get("status") == "OK"
 
 
 async def test_get_account(api, aresponses):
