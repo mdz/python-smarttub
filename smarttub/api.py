@@ -234,7 +234,7 @@ class Spa:
         }
         await self.request("PATCH", "config", body)
 
-    async def toggle_clearray(self, str):
+    async def toggle_clearray(self):
         await self.request("POST", "clearray/toggle")
 
     async def set_temperature_format(self, temperature_format: TemperatureFormat):

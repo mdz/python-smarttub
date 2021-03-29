@@ -353,3 +353,8 @@ async def test_set_temperature(mock_api, spa):
     mock_api.request.assert_called_with(
         "PATCH", f"spas/{spa.id}/config", {"setTemperature": 38.3}
     )
+
+
+async def test_toggle_clearray(mock_api, spa):
+    await spa.toggle_clearray()
+    mock_api.request.assert_called_with("POST", f"spas/{spa.id}/clearray/toggle", None)
