@@ -304,6 +304,7 @@ async def test_get_errors(mock_api, spa):
     errors = await spa.get_errors()
     assert len(errors) == 1
     error = errors[0]
+    assert str(error)
     assert error.title == "Flow Switch Stuck Open"
 
 
@@ -346,6 +347,21 @@ async def test_get_debug_status(mock_api, spa):
 
     debug_status = await spa.get_debug_status()
     assert debug_status is not None
+
+
+async def test_get_energy_usage(mock_api, spa):
+    mock_api.request.return_value = {"buckets": []}
+    usage = await spa.get_energy_usage(
+        smarttub.Spa.EnergyUsageInterval.DAY,
+        datetime.date(2021, 1, 1),
+        datetime.date(2021, 1, 31),
+    )
+    mock_api.request.assert_called_with(
+        "POST",
+        f"spas/{spa.id}/energyUsage",
+        {"start": "2021-01-01", "end": "2021-01-31", "interval": "DAY"},
+    )
+    assert usage == []
 
 
 async def test_set_heat_mode(mock_api, spa):
@@ -404,3 +420,10 @@ async def test_secondary_filtration_cycle(mock_api, spa):
         cycle.mode == smarttub.SpaSecondaryFiltrationCycle.SecondaryFiltrationMode.AWAY
     )
     assert cycle.status == smarttub.SpaSecondaryFiltrationCycle.CycleStatus.INACTIVE
+
+    await cycle.set_mode(
+        smarttub.SpaSecondaryFiltrationCycle.SecondaryFiltrationMode.FREQUENT
+    )
+    mock_api.request.assert_called_with(
+        "PATCH", f"spas/{spa.id}/config", {"secondaryFiltrationConfig": "FREQUENT"}
+    )

@@ -1,24 +1,15 @@
-from unittest.mock import create_autospec
-
 import pytest
 
-import smarttub
 from smarttub import SpaPump
 
 pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture
-def spa():
-    spa = create_autospec(smarttub.Spa, instance=True)
-    return spa
-
-
-@pytest.fixture
-def pumps(spa):
+def pumps(mock_spa):
     pumps = [
         SpaPump(
-            spa,
+            mock_spa,
             **{
                 "id": "pid1",
                 "speed": "speed1",
@@ -33,10 +24,11 @@ def pumps(spa):
     return pumps
 
 
-async def test_pump(spa, pumps):
+async def test_pump(mock_spa, pumps):
     circ = pumps[0]
+    assert str(circ)
     assert circ.speed == "speed1"
     assert circ.state == SpaPump.PumpState.OFF
     assert circ.type == SpaPump.PumpType.CIRCULATION
     await circ.toggle()
-    spa.request.assert_called_with("POST", f"pumps/{circ.id}/toggle")
+    mock_spa.request.assert_called_with("POST", f"pumps/{circ.id}/toggle")

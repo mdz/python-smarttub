@@ -79,3 +79,14 @@ async def test_api_error(api, aresponses):
     aresponses.add(response=aresponses.Response(status=500))
     with pytest.raises(smarttub.APIError):
         await api.get_account()
+
+
+async def test_not_logged_in(unauthenticated_api, aresponses):
+    with pytest.raises(RuntimeError):
+        await unauthenticated_api.request("GET", "/")
+
+
+async def test_request(api, aresponses):
+    aresponses.add(response=aresponses.Response(text=None, status=200))
+    response = await api.request("GET", "/")
+    assert response is None
