@@ -25,7 +25,7 @@ def pumps(mock_spa):
 
 
 async def test_pump(mock_spa, pumps):
-    circ = pumps[0]
+    circ = pumps[1]
     assert str(circ)
     assert circ.speed == "speed1"
     assert circ.state == SpaPump.PumpState.OFF

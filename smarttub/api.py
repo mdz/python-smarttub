@@ -398,7 +398,7 @@ class SpaSecondaryFiltrationCycle(SpaState):
 
 class SpaPump:
     PumpState = Enum("PumpState", "OFF LOW HIGH")
-    PumpType = Enum("PumpType", "CIRCULATION JET")
+    PumpType = Enum("PumpType", "BLOWER CIRCULATION JET")
 
     def __init__(self, spa: Spa, **properties):
         self.spa = spa
