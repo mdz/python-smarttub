@@ -334,7 +334,7 @@ class SpaState:
 
 class SpaStateFull(SpaState):
     def __init__(self, spa: Spa, state: dict):
-        super().__init__(self, **state)
+        super().__init__(spa, **state)
         self.lights = [
             SpaLight(spa, **light_props) for light_props in self.properties["lights"]
         ]

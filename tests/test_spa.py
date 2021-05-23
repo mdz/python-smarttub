@@ -235,6 +235,8 @@ async def test_get_status_full(mock_api, spa):
     for light in status.lights:
         assert isinstance(light, smarttub.SpaLight)
 
+    assert status.spa == spa
+
 
 async def test_get_pumps(mock_api, spa):
     mock_api.request.return_value = {
