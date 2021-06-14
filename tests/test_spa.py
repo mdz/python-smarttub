@@ -101,6 +101,7 @@ async def test_get_status(mock_api, spa):
     status = await spa.get_status()
     assert status.state == "NORMAL"
     assert str(status)
+    assert len(status.locks) == 4
 
     pf = status.primary_filtration
     assert pf.mode == status.primary_filtration.PrimaryFiltrationMode.NORMAL
@@ -167,7 +168,7 @@ async def test_get_status_full(mock_api, spa):
         "locks": {
             "access": "UNLOCKED",
             "maintenance": "UNLOCKED",
-            "spa": "UNLOCKED",
+            "spa": "LOCKED",
             "temperature": "UNLOCKED",
         },
         "online": True,
@@ -236,6 +237,17 @@ async def test_get_status_full(mock_api, spa):
         assert isinstance(light, smarttub.SpaLight)
 
     assert status.spa == spa
+    assert len(status.locks) == 4
+
+    await status.locks["access"].lock()
+    mock_api.request.assert_called_with(
+        "POST", "spas/id1/lock", {"type": "ACCESS", "code": "0772"}
+    )
+
+    await status.locks["spa"].unlock()
+    mock_api.request.assert_called_with(
+        "POST", "spas/id1/unlock", {"type": "SPA", "code": "0772"}
+    )
 
 
 async def test_get_pumps(mock_api, spa):
