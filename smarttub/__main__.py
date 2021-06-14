@@ -13,14 +13,15 @@ from . import SmartTub, SpaLight
 async def info_command(spas, args):
     for spa in spas:
         print(f"= Spa '{spa.name}' =\n")
-        if args.all or args.status or args.location:
-            status = (await spa.get_status()).properties
+        if args.all or args.status or args.location or args.locks:
+            status = await spa.get_status()
+            status_dict = status.properties
             # redact location for privacy
-            location = status.pop("location")
+            location = status_dict.pop("location")
 
         if args.all or args.status:
             print("== Status ==")
-            pprint(status)
+            pprint(status_dict)
             print()
 
         if args.location:
@@ -51,6 +52,12 @@ async def info_command(spas, args):
             print("== Reminders ==")
             for reminder in await spa.get_reminders():
                 print(reminder)
+            print()
+
+        if args.all or args.locks:
+            print("== Locks ==")
+            for lock in status.locks.values():
+                print(lock)
             print()
 
         if args.all or args.energy:
@@ -105,6 +112,18 @@ async def set_command(spas, args):
             )
             await reminder.reset(days)
 
+        if args.lock:
+            status = await spa.get_status()
+            lock = status.locks[args.lock.lower()]
+            await lock.lock()
+            print("OK")
+
+        if args.unlock:
+            status = await spa.get_status()
+            lock = status.locks[args.unlock.lower()]
+            await lock.unlock()
+            print("OK")
+
 
 async def main(argv):
     parser = argparse.ArgumentParser()
@@ -131,6 +150,7 @@ async def main(argv):
     info_parser.add_argument("--lights", action="store_true")
     info_parser.add_argument("--errors", action="store_true")
     info_parser.add_argument("--reminders", action="store_true")
+    info_parser.add_argument("--locks", action="store_true")
     info_parser.add_argument("--debug", action="store_true")
     info_parser.add_argument("--energy", action="store_true")
 
@@ -154,6 +174,8 @@ async def main(argv):
         help="Reset a reminder",
         metavar=("REMINDER_ID", "DAYS"),
     )
+    set_parser.add_argument("--lock", type=str)
+    set_parser.add_argument("--unlock", type=str)
 
     args = parser.parse_args(argv)
 

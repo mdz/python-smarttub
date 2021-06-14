@@ -290,7 +290,12 @@ class SpaState:
         self._prop("lastUpdated", constructor=dateutil.parser.isoparse)
         self._prop("lights")  # seems to be None even when there are lights?
         self._prop("location")
-        self._prop("locks")
+        self._prop(
+            "locks",
+            constructor=lambda x: {
+                k: SpaLock(self.spa, kind=k, state=v) for k, v in x.items()
+            },
+        )
         self._prop("online")
         self._prop("ozone")
         self._prop(
@@ -486,6 +491,40 @@ class SpaError:
 
     def __str__(self):
         return f"<SpaError {self.title}>"
+
+
+class SpaLock:
+    CODE = "0772"
+
+    def __init__(self, spa: Spa, kind: str, state: str):
+        self.spa = spa
+        self.kind = kind
+        self.state = state
+
+    async def lock(self):
+        if self.state != "LOCKED":
+            await self.spa.request(
+                "POST",
+                "lock",
+                {
+                    "type": self.kind.upper(),
+                    "code": self.CODE,
+                },
+            )
+
+    async def unlock(self):
+        if self.state != "UNLOCKED":
+            await self.spa.request(
+                "POST",
+                "unlock",
+                {
+                    "type": self.kind.upper(),
+                    "code": self.CODE,
+                },
+            )
+
+    def __str__(self):
+        return f"<SpaLock {self.kind}: {self.state}>"
 
 
 class LoginFailed(RuntimeError):
