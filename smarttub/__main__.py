@@ -15,12 +15,12 @@ async def info_command(spas, args):
         print(f"= Spa '{spa.name}' =\n")
         if args.all or args.status or args.location or args.locks:
             status = await spa.get_status()
-            status_dict = status.properties
-            # redact location for privacy
-            location = status_dict.pop("location")
 
         if args.all or args.status:
             print("== Status ==")
+            status_dict = status.properties.copy()
+            # redact location for privacy
+            location = status_dict.pop("location")
             pprint(status_dict)
             print()
 
