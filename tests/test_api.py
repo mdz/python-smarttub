@@ -25,7 +25,7 @@ async def api(unauthenticated_api, aresponses):
             "access_token": jwt.encode(
                 {api.AUTH_ACCOUNT_ID_KEY: ACCOUNT_ID, "exp": time.time() + 3600},
                 "secret",
-            ).decode(),
+            ),
             "token_type": "Bearer",
             "refresh_token": "refresh1",
         }
@@ -53,7 +53,7 @@ async def test_refresh_token(api, aresponses):
             "access_token": jwt.encode(
                 {api.AUTH_ACCOUNT_ID_KEY: ACCOUNT_ID, "exp": now + 3601},
                 "secret",
-            ).decode(),
+            ),
         }
     )
     aresponses.add(response={"status": "OK"})
