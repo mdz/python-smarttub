@@ -21,6 +21,8 @@ class SmartTub:
     AUTH_CLIENT_ID = "dB7Rcp3rfKKh0vHw2uqkwOZmRb5WNjQC"
     AUTH_REALM = "Username-Password-Authentication"
     AUTH_ACCOUNT_ID_KEY = "http://operation-link.com/account_id"
+    AUTH_GRANT_TYPE = "http://auth0.com/oauth/grant-type/password-realm"
+    AUTH_SCOPE = "openid email offline_access User Admin"
 
     API_BASE = "https://api.smarttub.io"
 
@@ -43,9 +45,9 @@ class SmartTub:
             json={
                 "audience": self.AUTH_AUDIENCE,
                 "client_id": self.AUTH_CLIENT_ID,
-                "grant_type": "http://auth0.com/oauth/grant-type/password-realm",
+                "grant_type": self.AUTH_GRANT_TYPE,
                 "realm": self.AUTH_REALM,
-                "scope": "openid email offline_access User Admin",
+                "scope": self.AUTH_SCOPE,
                 "username": username,
                 "password": password,
             },
