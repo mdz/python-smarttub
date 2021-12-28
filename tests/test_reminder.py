@@ -18,7 +18,20 @@ def reminders(mock_spa):
                 "snoozed": False,
                 "state": "INACTIVE",
             }
-        )
+        ),
+        SpaReminder(
+            mock_spa,
+            **{
+                "id": "NO_LAST_UPDATED",
+                # lastUpdated may be null, see
+                # https://github.com/mdz/python-smarttub/issues/22
+                "lastUpdated": None,
+                "name": "Refresh Water",
+                "remainingDuration": 0,
+                "snoozed": False,
+                "state": "INACTIVE",
+            }
+        ),
     ]
     return reminders
 
