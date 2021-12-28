@@ -466,11 +466,15 @@ class SpaReminder:
     def __init__(self, spa: Spa, **properties):
         self.spa = spa
         self.id = properties["id"]
-        self.last_updated = dateutil.parser.isoparse(properties["lastUpdated"])
         self.name = properties["name"]
         self.remaining_days = properties["remainingDuration"]
         self.snoozed = properties["snoozed"]
         self.state = properties["state"]
+        self.last_updated = None
+
+        last_updated_str = properties.get("lastUpdated")
+        if last_updated_str is not None:
+            self.last_updated = dateutil.parser.isoparse(last_updated_str)
 
     async def snooze(self, days: int):
         body = {"remainingDuration": days}
