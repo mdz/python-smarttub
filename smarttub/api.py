@@ -429,7 +429,7 @@ class SpaPump:
 class SpaLight:
     LightMode = Enum(
         "LightMode",
-        "PURPLE ORANGE RED YELLOW GREEN AQUA BLUE WHITE HIGH_SPEED_COLOR_WHEEL FULL_DYNAMIC_RGB OFF",
+        "PURPLE ORANGE RED YELLOW GREEN AQUA BLUE WHITE AMBER HIGH_SPEED_COLOR_WHEEL FULL_DYNAMIC_RGB OFF",
     )
 
     def __init__(self, spa: Spa, **properties):
