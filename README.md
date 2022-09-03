@@ -32,6 +32,14 @@ async with aiohttp.ClientSession() as session:
 
 See also `smarttub/__main__.py` for example usage
 
+## Troubleshooting
+
+If this module is not working with your device, please run the following
+command and include the output with your bug report:
+
+```bash
+python3 -m smarttub -u YOUR_SMARTTUB_EMAIL -p YOUR_SMARTTUB_PASSWORD -vv info -a
+```
 
 ## Contributing
 ```bash
