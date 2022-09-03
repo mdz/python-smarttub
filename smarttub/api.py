@@ -211,7 +211,11 @@ class Spa:
     async def get_status_full(self) -> "SpaStateFull":
         """Retrieves the state of lights and pumps in addition to what get_status does."""
         full_status = await self.request("GET", "fullStatus")
-        return SpaStateFull(self, full_status)
+        try:
+            return SpaStateFull(self, full_status)
+        except Exception:
+            logger.error(f"Failed to parse fullStatus response: {full_status}")
+            raise
 
     async def get_debug_status(self) -> dict:
         return (await self.request("GET", "debugStatus"))["debugStatus"]
