@@ -329,8 +329,19 @@ class SpaState:
         self._prop("watercare")
 
     def _prop(
-        self, json_key, instance_variable_name=None, optional=True, constructor=None
+        self,
+        json_key,
+        instance_variable_name=None,
+        constructor=None,
     ):
+        """Set an instance variable corresponding to the specified JSON property
+
+        Arguments:
+            json_key -- a key in the self.properties map
+            instance_variable_name -- the name of the variable to set
+            constructor -- a callable which accepts the raw value as an argument, and returns an appropriate internal representation (e.g. enum)
+        """
+
         if instance_variable_name is None:
             instance_variable_name = underscore(json_key)
         if json_key in self.properties:
