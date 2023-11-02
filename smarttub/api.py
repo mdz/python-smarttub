@@ -348,9 +348,15 @@ class SpaState:
             if constructor is None:
                 setattr(self, instance_variable_name, self.properties[json_key])
             else:
-                setattr(
-                    self, instance_variable_name, constructor(self.properties[json_key])
-                )
+                # if value is None, skip constructor
+                if self.properties[json_key] is None:
+                    setattr(self, instance_variable_name, None)
+                else:
+                    setattr(
+                        self,
+                        instance_variable_name,
+                        constructor(self.properties[json_key]),
+                    )
         else:
             setattr(self, instance_variable_name, None)
 
