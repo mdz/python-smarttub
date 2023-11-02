@@ -250,6 +250,114 @@ async def test_get_status_full(mock_api, spa):
     )
 
 
+# https://github.com/home-assistant/core/issues/102339
+async def test_null_blowout(mock_api, spa):
+    mock_api.request.return_value = {
+        "ambientTemperature": 65.6,
+        "blowoutCycle": None,
+        "cleanupCycle": "INACTIVE",
+        "current": {"average": 9.5, "kwh": 0.375, "max": 9.6, "min": 9.4, "value": 9.5},
+        "date": "2021-03-07",
+        "demoMode": "DISABLED",
+        "dipSwitches": 8,
+        "displayTemperatureFormat": "FAHRENHEIT",
+        "error": {"code": 0, "description": None, "title": "All Clear"},
+        "errorCode": 0,
+        "fieldsLastUpdated": {
+            "cfstEvent": "2021-03-07T08:36:52.908Z",
+            "errEvent": "2021-03-07T08:00:29.813Z",
+            "heatMode": "2021-02-22T07:21:26.598Z",
+            "locEvent": "2021-03-07T01:20:34.262Z",
+            "online": "2021-03-07T22:04:13.477Z",
+            "rpstEvent": "2021-03-07T22:05:21.288Z",
+            "setTemperature": "2021-02-26T05:00:27.580Z",
+            "sp2stEvent": "2021-03-07T08:36:54.867Z",
+            "spstEvent": "2021-03-07T21:39:11.540Z",
+            "uv": "2021-03-07T20:01:23.870Z",
+            "uvOnDemand": "2021-02-13T04:36:06.268Z",
+            "wcstEvent": "2021-03-07T21:59:14.378Z",
+        },
+        "flowSwitch": "OPEN",
+        "heatMode": "AUTO",
+        "heater": "OFF",
+        "highTemperatureLimit": 38.9,
+        "lastUpdated": "2021-03-07T22:05:21.440Z",
+        "lights": [
+            {
+                "color": {"blue": 0, "green": 0, "red": 0, "white": 0},
+                "cycleSpeed": 0,
+                "intensity": 0,
+                "mode": "OFF",
+                "zone": 1,
+            }
+        ],
+        "location": {"accuracy": 1053.0, "latitude": 27.129, "longitude": -27.906},
+        "locks": {
+            "access": "UNLOCKED",
+            "maintenance": "UNLOCKED",
+            "spa": "LOCKED",
+            "temperature": "UNLOCKED",
+        },
+        "online": True,
+        "ozone": "OFF",
+        "primaryFiltration": {
+            "cycle": 1,
+            "duration": 4,
+            "lastUpdated": "2021-02-24T02:55:47.180Z",
+            "mode": "NORMAL",
+            "startHour": 2,
+            "status": "INACTIVE",
+        },
+        "pumps": [
+            {
+                "current": None,
+                "id": "P2",
+                "speed": "ONE_SPEED",
+                "state": "OFF",
+                "type": "JET",
+            },
+            {
+                "current": None,
+                "id": "P1",
+                "speed": "ONE_SPEED",
+                "state": "OFF",
+                "type": "JET",
+            },
+            {
+                "current": None,
+                "id": "CP",
+                "speed": "ONE_SPEED",
+                "state": "OFF",
+                "type": "CIRCULATION",
+            },
+        ],
+        "secondaryFiltration": {
+            "lastUpdated": "2021-03-04T16:47:29.882Z",
+            "mode": "AWAY",
+            "status": "INACTIVE",
+        },
+        "setTemperature": 38.3,
+        "state": "NORMAL",
+        "time": "14:05:00",
+        "timeFormat": "HOURS_12",
+        "timeSet": None,
+        "timezone": None,
+        "uv": "OFF",
+        "uvOnDemand": "OFF",
+        "versions": {"balboa": "1.06", "controller": "1.28", "jacuzziLink": "53"},
+        "water": {
+            "oxidationReductionPotential": 604,
+            "ph": 7.01,
+            "temperature": 38.9,
+            "temperatureLastUpdated": "2021-03-07T22:04:15.686Z",
+            "turbidity": 0.01,
+        },
+        "watercare": None,
+    }
+    status = await spa.get_status_full()
+    assert status.blowout_cycle is None
+
+
 async def test_get_pumps(mock_api, spa):
     mock_api.request.return_value = {
         "pumps": [
