@@ -385,7 +385,7 @@ class SpaWaterState(SpaState):
 
 
 class SpaPrimaryFiltrationCycle(SpaState):
-    PrimaryFiltrationMode = Enum("PrimaryFiltrationMode", "NORMAL")
+    PrimaryFiltrationMode = Enum("PrimaryFiltrationMode", "NORMAL NANO_MODE")
 
     def __init__(self, spa: Spa, **properties):
         self.spa = spa
