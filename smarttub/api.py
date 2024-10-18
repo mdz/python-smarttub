@@ -465,6 +465,7 @@ class SpaLight:
 
         self.intensity = properties["intensity"]
         self.mode = self.LightMode[properties["mode"]]
+        self.cycleSpeed = properties["cycleSpeed"]
         self.properties = properties
 
     async def set_mode(self, mode: LightMode, intensity: int):
@@ -480,7 +481,7 @@ class SpaLight:
         await self.set_mode(self.LightMode.OFF, 0)
 
     def __str__(self):
-        return f"<SpaLight {self.zone}: {self.mode.name} (R {self.red}/G {self.green}/B {self.blue}/W {self.white}) @ {self.intensity}>"
+        return f"<SpaLight {self.zone}: {self.mode.name} {self.cycleSpeed} (R {self.red}/G {self.green}/B {self.blue}/W {self.white}) @ {self.intensity}>"
 
 
 class SpaReminder:
