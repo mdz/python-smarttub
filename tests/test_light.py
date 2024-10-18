@@ -24,6 +24,7 @@ def lights(mock_spa):
     ]
     return lights
 
+
 async def test_light(mock_spa, lights):
     purple = lights[0]
     assert str(purple)
