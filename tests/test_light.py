@@ -14,6 +14,7 @@ def lights(mock_spa):
                 "color": {"blue": 0, "green": 0, "red": 0, "white": 0},
                 "intensity": 0 if mode == SpaLight.LightMode.OFF else 50,
                 "mode": mode.name,
+                "cycleSpeed": 0,
                 "zone": i + 1,
             },
         )
