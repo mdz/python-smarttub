@@ -15,13 +15,14 @@ def lights(mock_spa):
                 "intensity": 0 if mode == SpaLight.LightMode.OFF else 50,
                 "mode": mode.name,
                 "cycleSpeed": 0,
+                "exterior": False,
+                "irt": None,
                 "zone": i + 1,
             },
         )
         for i, mode in enumerate(SpaLight.LightMode)
     ]
     return lights
-
 
 async def test_light(mock_spa, lights):
     purple = lights[0]
