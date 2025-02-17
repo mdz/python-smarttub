@@ -162,7 +162,7 @@ class Account:
 
 
 class Spa:
-    HeatMode = Enum("HeatMode", "ECONOMY DAY NIGHT AUTO READY")
+    HeatMode = Enum("HeatMode", "ECONOMY DAY NIGHT AUTO READY REST")
     TemperatureFormat = Enum("TemperatureFormat", "FAHRENHEIT CELSIUS")
     EnergyUsageInterval = Enum("EnergyUsageInterval", "DAY MONTH")
 
@@ -385,7 +385,7 @@ class SpaWaterState(SpaState):
 
 
 class SpaPrimaryFiltrationCycle(SpaState):
-    PrimaryFiltrationMode = Enum("PrimaryFiltrationMode", "NORMAL")
+    PrimaryFiltrationMode = Enum("PrimaryFiltrationMode", "NORMAL NANO_MODE")
 
     def __init__(self, spa: Spa, **properties):
         self.spa = spa
@@ -450,7 +450,7 @@ class SpaPump:
 class SpaLight:
     LightMode = Enum(
         "LightMode",
-        "PURPLE ORANGE RED YELLOW GREEN AQUA BLUE WHITE AMBER HIGH_SPEED_COLOR_WHEEL HIGH_SPEED_WHEEL LOW_SPEED_WHEEL FULL_DYNAMIC_RGB AUTO_TIMER_EXTERIOR PARTY OFF ON",
+        "PURPLE ORANGE RED YELLOW GREEN AQUA BLUE WHITE AMBER HIGH_SPEED_COLOR_WHEEL HIGH_SPEED_WHEEL LOW_SPEED_WHEEL FULL_DYNAMIC_RGB AUTO_TIMER_EXTERIOR PARTY COLOR_WHEEL OFF ON",
     )
 
     def __init__(self, spa: Spa, **properties):
