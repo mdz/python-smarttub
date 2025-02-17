@@ -32,13 +32,13 @@ async def info_command(spas, args):
 
         if args.all or args.pumps:
             print("== Pumps ==")
-            for pump in await spa.get_pumps():
+            for pump in status.pumps:
                 print(pump)
             print()
 
         if args.all or args.lights:
             print("== Lights ==")
-            for light in await spa.get_lights():
+            for light in status.lights:
                 print(light)
             print()
 
