@@ -14,7 +14,7 @@ async def info_command(spas, args):
     for spa in spas:
         print(f"= Spa '{spa.name}' =\n")
         if args.all or args.status or args.location or args.locks:
-            status = await spa.get_status()
+            status = await spa.get_status_full()
 
         if args.all or args.status:
             print("== Status ==")
@@ -68,6 +68,12 @@ async def info_command(spas, args):
                 start_date=datetime.date.today() - datetime.timedelta(days=7),
             )
             pprint(await energy_usage_day)
+            print()
+
+        if args.all or args.sensors:
+            print("== Sensors ==")
+            for sensor in status.sensors:
+                print(sensor)
             print()
 
         if args.all or args.debug:
@@ -152,6 +158,7 @@ async def main(argv):
     info_parser.add_argument("--reminders", action="store_true")
     info_parser.add_argument("--locks", action="store_true")
     info_parser.add_argument("--debug", action="store_true")
+    info_parser.add_argument("--sensors", action="store_true")
     info_parser.add_argument("--energy", action="store_true")
 
     set_parser = subparsers.add_parser("set", help="Change settings on the spa")
