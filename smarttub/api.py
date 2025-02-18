@@ -566,12 +566,13 @@ class SpaSensor:
         self.address = properties["address"]
         self.name = properties["name"]
         self.type = properties["type"]
+        self.subType = properties["subType"]
 
         self.magnet = properties["magnet"]
         self.pressure = properties["pressure"]
         self.motion = properties["motion"]
         self.fill_drain = properties["fill_drain"]
-    
+
     def __str__(self):
         return f"<SpaSensor {self.name} ({self.type})"
 
