@@ -373,6 +373,9 @@ class SpaStateFull(SpaState):
         self.pumps = [
             SpaPump(spa, **pump_props) for pump_props in self.properties["pumps"]
         ]
+        self.sensors = [
+            SpaSensor(spa, **sensor_props) for sensor_props in self.properties.get("sensors", [])
+        ]
 
 
 class SpaWaterState(SpaState):
@@ -556,6 +559,23 @@ class SpaLock:
 
     def __str__(self):
         return f"<SpaLock {self.kind}: {self.state}>"
+
+
+class SpaSensor:
+    def __init__(self, spa: Spa, **properties):
+        self.spa = spa
+        self.address = properties["address"]
+        self.name = properties["name"]
+        self.type = properties["type"]
+        self.subType = properties["subType"]
+
+        self.magnet = properties["magnet"]
+        self.pressure = properties["pressure"]
+        self.motion = properties["motion"]
+        self.fill_drain = properties["fill_drain"]
+
+    def __str__(self):
+        return f"<SpaSensor {self.name} ({self.type})"
 
 
 class LoginFailed(RuntimeError):
