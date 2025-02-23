@@ -560,6 +560,7 @@ class SpaLock:
     def __str__(self):
         return f"<SpaLock {self.kind}: {self.state}>"
 
+
 class SpaSensor:
     def __init__(self, spa: Spa, **properties):
         self.spa = spa
@@ -575,6 +576,7 @@ class SpaSensor:
 
     def __str__(self):
         return f"<SpaSensor {self.name} ({self.type})"
+
 
 class LoginFailed(RuntimeError):
     pass
