@@ -181,14 +181,14 @@ class Spa:
 
     async def _wait_for_state_change(self, check_func, timeout=10):
         """Wait for a state change to be reflected in the API.
-        
+
         Args:
             check_func: A function that takes a SpaState and returns True if the desired state is reached
             timeout: Maximum time to wait in seconds
-            
+
         Returns:
             The final SpaState after the change is complete
-            
+
         Raises:
             RuntimeError if the state change is not reflected within the timeout period
         """
@@ -197,10 +197,10 @@ class Spa:
             state = await self.get_status()
             if check_func(state):
                 return state
-                
+
             if datetime.datetime.now().timestamp() - start_time > timeout:
                 raise RuntimeError("State change not reflected within timeout period")
-                
+
             await asyncio.sleep(0.5)
 
     async def get_status(self) -> "SpaState":
@@ -478,8 +478,8 @@ class SpaPump:
         await self.spa.request("POST", f"pumps/{self.id}/toggle")
         await self.spa._wait_for_state_change(
             lambda state: any(
-                pump.state != current_state 
-                for pump in state.pumps 
+                pump.state != current_state
+                for pump in state.pumps
                 if pump.id == self.id
             )
         )
