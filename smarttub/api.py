@@ -190,16 +190,16 @@ class Spa:
             The final SpaState after the change is complete
             
         Raises:
-            TimeoutError if the state change is not reflected within the timeout period
+            RuntimeError if the state change is not reflected within the timeout period
         """
-        start_time = time.time()
+        start_time = datetime.datetime.now().timestamp()
         while True:
             state = await self.get_status()
             if check_func(state):
                 return state
                 
-            if time.time() - start_time > timeout:
-                raise TimeoutError("State change not reflected within timeout period")
+            if datetime.datetime.now().timestamp() - start_time > timeout:
+                raise RuntimeError("State change not reflected within timeout period")
                 
             await asyncio.sleep(0.5)
 
