@@ -179,6 +179,30 @@ class Spa:
     async def request(self, method, resource: str, body=None):
         return await self._api.request(method, f"spas/{self.id}/{resource}", body)
 
+    async def _wait_for_state_change(self, check_func, timeout=10):
+        """Wait for a state change to be reflected in the API.
+        
+        Args:
+            check_func: A function that takes a SpaState and returns True if the desired state is reached
+            timeout: Maximum time to wait in seconds
+            
+        Returns:
+            The final SpaState after the change is complete
+            
+        Raises:
+            TimeoutError if the state change is not reflected within the timeout period
+        """
+        start_time = time.time()
+        while True:
+            state = await self.get_status()
+            if check_func(state):
+                return state
+                
+            if time.time() - start_time > timeout:
+                raise TimeoutError("State change not reflected within timeout period")
+                
+            await asyncio.sleep(0.5)
+
     async def get_status(self) -> "SpaState":
         """Query the status of the spa."""
         return SpaState(self, **await self.request("GET", "status"))
@@ -236,6 +260,7 @@ class Spa:
     async def set_heat_mode(self, mode: HeatMode):
         body = {"heatMode": mode.name}
         await self.request("PATCH", "config", body)
+        await self._wait_for_state_change(lambda state: state.heat_mode == mode)
 
     async def set_temperature(self, temp_c: float):
         body = {
@@ -243,13 +268,16 @@ class Spa:
             "setTemperature": round(temp_c, 1)
         }
         await self.request("PATCH", "config", body)
+        await self._wait_for_state_change(lambda state: state.set_temperature == round(temp_c, 1))
 
     async def toggle_clearray(self):
         await self.request("POST", "clearray/toggle")
+        # No need to wait for state change as this is a toggle operation
 
     async def set_temperature_format(self, temperature_format: TemperatureFormat):
         body = {"displayTemperatureFormat": temperature_format.name}
         await self.request("POST", "config", body)
+        await self._wait_for_state_change(lambda state: state.display_temperature_format == temperature_format)
 
     async def set_date_time(
         self, date: datetime.date = None, time: datetime.time = None
@@ -265,6 +293,7 @@ class Spa:
             config["time"] = time.isoformat("minutes")
         body = {"dateTimeConfig": config}
         await self.request("POST", "config", body)
+        # No need to wait for state change as this is a one-time operation
 
     def __str__(self):
         return f"<Spa {self.id}>"
