@@ -473,7 +473,16 @@ class SpaPump:
         self.properties = properties
 
     async def toggle(self):
+        # For toggle, we need to wait for the state to change from its current state
+        current_state = self.state
         await self.spa.request("POST", f"pumps/{self.id}/toggle")
+        await self.spa._wait_for_state_change(
+            lambda state: any(
+                pump.state != current_state 
+                for pump in state.pumps 
+                if pump.id == self.id
+            )
+        )
 
     def __str__(self):
         return f"<SpaPump {self.id}: {self.type.name}={self.state.name}>"
@@ -507,6 +516,13 @@ class SpaLight:
             "mode": mode.name,
         }
         await self.spa.request("PATCH", f"lights/{self.zone}", body)
+        await self.spa._wait_for_state_change(
+            lambda state: any(
+                light.mode == mode and light.intensity == intensity
+                for light in state.lights
+                if light.zone == self.zone
+            )
+        )
 
     async def turn_off(self):
         await self.set_mode(self.LightMode.OFF, 0)
