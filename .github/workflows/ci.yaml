@@ -9,7 +9,7 @@ jobs:
   build:
     strategy:
       matrix:
-        python-version: [3.9, 3.11, 3.12]
+        python-version: [3.9, 3.11, 3.12, 3.13]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -18,13 +18,13 @@ jobs:
         uses: actions/setup-python@v1
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -r requirements_tests.txt
-          pip install flake8
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Add uv to PATH
+        run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      - name: Install all dependencies
+        run: uv sync --extra dev
       - name: Lint with flake8
-        run: flake8 --show-source --statistics
+        run: uv run flake8 smarttub tests --show-source --statistics
       - name: Test with pytest
-        run: pytest --cov-fail-under=100 --cov-report=term-missing
+        run: uv run pytest --cov-fail-under=100 --cov-report=term-missing

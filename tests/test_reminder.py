@@ -17,7 +17,7 @@ def reminders(mock_spa):
                 "remainingDuration": 0,
                 "snoozed": False,
                 "state": "INACTIVE",
-            }
+            },
         ),
         SpaReminder(
             mock_spa,
@@ -30,7 +30,7 @@ def reminders(mock_spa):
                 "remainingDuration": 0,
                 "snoozed": False,
                 "state": "INACTIVE",
-            }
+            },
         ),
     ]
     return reminders
