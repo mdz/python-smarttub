@@ -1249,7 +1249,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aiohttp", specifier = "~=3.9.1" },
+    { name = "aiohttp", specifier = ">=3.9.1" },
     { name = "aresponses", marker = "extra == 'dev'" },
     { name = "black", marker = "extra == 'dev'" },
     { name = "flake8", marker = "extra == 'dev'" },
