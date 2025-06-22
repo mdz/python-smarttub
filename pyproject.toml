@@ -1,6 +1,6 @@
 [project]
 name = "python-smarttub"
-version = "0.0.39"
+dynamic = ["version"]
 description = "API to query and control hot tubs using the SmartTub system"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -19,12 +19,16 @@ dev = [
     "aresponses",
     "pre-commit",
     "black",
-    "flake8"
+    "flake8",
+    "twine"
 ]
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
