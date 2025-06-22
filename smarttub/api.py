@@ -374,7 +374,8 @@ class SpaStateFull(SpaState):
             SpaPump(spa, **pump_props) for pump_props in self.properties["pumps"]
         ]
         self.sensors = [
-            SpaSensor(spa, **sensor_props) for sensor_props in self.properties.get("sensors", [])
+            SpaSensor(spa, **sensor_props)
+            for sensor_props in self.properties.get("sensors", [])
         ]
 
 
