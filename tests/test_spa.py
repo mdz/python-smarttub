@@ -2,6 +2,7 @@ import datetime
 from dateutil.tz import tzutc
 from unittest.mock import create_autospec
 import itertools
+import copy
 
 import pytest
 
@@ -513,14 +514,9 @@ async def test_get_energy_usage(mock_api, spa):
     assert usage == []
 
 
-def setup_state_change_mock(mock_api, patch_args, state_response):
-    """
-    Helper to mock a PATCH/POST followed by repeated GETs for state polling.
-    patch_args: tuple of (method, url, body) for the state-changing call
-    state_response: dict to merge into the GET status dict
-    """
-    # Compose a full status dict, merging in the state_response for the field being tested
-    full_status = {
+# Canonical status dict for /status endpoint (no pumps/lights)
+def canonical_status(**overrides):
+    status = {
         "ambientTemperature": 65.6,
         "blowoutCycle": "INACTIVE",
         "cleanupCycle": "INACTIVE",
@@ -528,16 +524,16 @@ def setup_state_change_mock(mock_api, patch_args, state_response):
         "date": "2021-02-21",
         "demoMode": "DISABLED",
         "dipSwitches": 8,
-        "displayTemperatureFormat": state_response.get("displayTemperatureFormat", "FAHRENHEIT"),
+        "displayTemperatureFormat": "FAHRENHEIT",
         "error": {"code": 0, "description": None, "title": "All Clear"},
         "errorCode": 0,
         "fieldsLastUpdated": {},
         "flowSwitch": "OPEN",
-        "heatMode": state_response.get("heatMode", "AUTO"),
+        "heatMode": "AUTO",
         "heater": "OFF",
         "highTemperatureLimit": 36.1,
         "lastUpdated": "2021-02-21T21:32:36.215Z",
-        "lights": None,
+        "lights": None,  # /status returns None for lights
         "locks": {
             "access": "UNLOCKED",
             "maintenance": "UNLOCKED",
@@ -554,13 +550,13 @@ def setup_state_change_mock(mock_api, patch_args, state_response):
             "startHour": 2,
             "status": "INACTIVE",
         },
-        "pumps": None,
+        "pumps": None,  # /status returns None for pumps
         "secondaryFiltration": {
             "lastUpdated": "2020-07-09T19:39:52.961Z",
             "mode": "AWAY",
             "status": "INACTIVE",
         },
-        "setTemperature": state_response.get("setTemperature", 38.3),
+        "setTemperature": 38.3,
         "state": "NORMAL",
         "time": "14:45:00",
         "timeFormat": "HOURS_12",
@@ -578,9 +574,29 @@ def setup_state_change_mock(mock_api, patch_args, state_response):
         },
         "watercare": None,
     }
+    status.update(overrides)
+    return copy.deepcopy(status)
+
+# Canonical full status dict for /fullStatus endpoint (includes pumps/lights)
+def canonical_full_status(**overrides):
+    full_status = canonical_status()
+    full_status["pumps"] = [
+        {"id": "P1", "speed": "ONE_SPEED", "state": "OFF", "type": "JET", "current": None},
+        {"id": "CP", "speed": "ONE_SPEED", "state": "OFF", "type": "CIRCULATION", "current": None},
+    ]
+    full_status["lights"] = [
+        {"zone": 1, "color": {"red": 0, "green": 0, "blue": 0, "white": 0}, "intensity": 0, "mode": "OFF"}
+    ]
+    full_status.update(overrides)
+    return copy.deepcopy(full_status)
+
+# Update setup_state_change_mock to use canonical_status or canonical_full_status
+def setup_state_change_mock(mock_api, patch_args, state_response, full=False):
+    import itertools
+    status_func = canonical_full_status if full else canonical_status
     mock_api.request.side_effect = itertools.chain(
         [None],  # PATCH/POST
-        itertools.repeat(full_status)  # infinite GETs
+        itertools.repeat(status_func(**state_response))  # infinite GETs
     )
     return patch_args
 

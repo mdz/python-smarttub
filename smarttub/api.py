@@ -179,12 +179,13 @@ class Spa:
     async def request(self, method, resource: str, body=None):
         return await self._api.request(method, f"spas/{self.id}/{resource}", body)
 
-    async def _wait_for_state_change(self, check_func, timeout=10):
+    async def _wait_for_state_change(self, check_func, timeout=10, get_status_method=None):
         """Wait for a state change to be reflected in the API.
 
         Args:
             check_func: A function that takes a SpaState and returns True if the desired state is reached
             timeout: Maximum time to wait in seconds
+            get_status_method: A method to call to get the current state if needed
 
         Returns:
             The final SpaState after the change is complete
@@ -202,6 +203,9 @@ class Spa:
                 raise RuntimeError("State change not reflected within timeout period")
 
             await asyncio.sleep(0.5)
+
+            if get_status_method:
+                state = await get_status_method()
 
     async def get_status(self) -> "SpaState":
         """Query the status of the spa."""
@@ -481,7 +485,8 @@ class SpaPump:
                 pump.state != current_state
                 for pump in state.pumps
                 if pump.id == self.id
-            )
+            ),
+            get_status_method=self.spa.get_status_full
         )
 
     def __str__(self):
@@ -521,7 +526,8 @@ class SpaLight:
                 light.mode == mode and light.intensity == intensity
                 for light in state.lights
                 if light.zone == self.zone
-            )
+            ),
+            get_status_method=self.spa.get_status_full
         )
 
     async def turn_off(self):
