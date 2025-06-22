@@ -179,6 +179,36 @@ class Spa:
     async def request(self, method, resource: str, body=None):
         return await self._api.request(method, f"spas/{self.id}/{resource}", body)
 
+    async def _wait_for_state_change(
+        self, check_func, timeout=10, get_status_method=None
+    ):
+        """Wait for a state change to be reflected in the API.
+
+        Args:
+            check_func: A function that takes a SpaState and returns True if the desired state is reached
+            timeout: Maximum time to wait in seconds
+            get_status_method: A method to call to get the current state if needed
+
+        Returns:
+            The final SpaState after the change is complete
+
+        Raises:
+            RuntimeError if the state change is not reflected within the timeout period
+        """
+        start_time = datetime.datetime.now().timestamp()
+        while True:
+            state = await self.get_status()
+            if check_func(state):
+                return state
+
+            if datetime.datetime.now().timestamp() - start_time > timeout:
+                raise RuntimeError("State change not reflected within timeout period")
+
+            await asyncio.sleep(0.5)
+
+            if get_status_method:
+                state = await get_status_method()
+
     async def get_status(self) -> "SpaState":
         """Query the status of the spa."""
         return SpaState(self, **await self.request("GET", "status"))
@@ -236,6 +266,7 @@ class Spa:
     async def set_heat_mode(self, mode: HeatMode):
         body = {"heatMode": mode.name}
         await self.request("PATCH", "config", body)
+        await self._wait_for_state_change(lambda state: state.heat_mode == mode)
 
     async def set_temperature(self, temp_c: float):
         body = {
@@ -243,13 +274,20 @@ class Spa:
             "setTemperature": round(temp_c, 1)
         }
         await self.request("PATCH", "config", body)
+        await self._wait_for_state_change(
+            lambda state: state.set_temperature == round(temp_c, 1)
+        )
 
     async def toggle_clearray(self):
         await self.request("POST", "clearray/toggle")
+        # No need to wait for state change as this is a toggle operation
 
     async def set_temperature_format(self, temperature_format: TemperatureFormat):
         body = {"displayTemperatureFormat": temperature_format.name}
         await self.request("POST", "config", body)
+        await self._wait_for_state_change(
+            lambda state: state.display_temperature_format == temperature_format.name
+        )
 
     async def set_date_time(
         self, date: datetime.date = None, time: datetime.time = None
@@ -265,6 +303,7 @@ class Spa:
             config["time"] = time.isoformat("minutes")
         body = {"dateTimeConfig": config}
         await self.request("POST", "config", body)
+        # No need to wait for state change as this is a one-time operation
 
     def __str__(self):
         return f"<Spa {self.id}>"
@@ -445,7 +484,17 @@ class SpaPump:
         self.properties = properties
 
     async def toggle(self):
+        # For toggle, we need to wait for the state to change from its current state
+        current_state = self.state
         await self.spa.request("POST", f"pumps/{self.id}/toggle")
+        await self.spa._wait_for_state_change(
+            lambda state: any(
+                pump.state != current_state
+                for pump in state.pumps
+                if pump.id == self.id
+            ),
+            get_status_method=self.spa.get_status_full,
+        )
 
     def __str__(self):
         return f"<SpaPump {self.id}: {self.type.name}={self.state.name}>"
@@ -479,6 +528,14 @@ class SpaLight:
             "mode": mode.name,
         }
         await self.spa.request("PATCH", f"lights/{self.zone}", body)
+        await self.spa._wait_for_state_change(
+            lambda state: any(
+                light.mode == mode and light.intensity == intensity
+                for light in state.lights
+                if light.zone == self.zone
+            ),
+            get_status_method=self.spa.get_status_full,
+        )
 
     async def turn_off(self):
         await self.set_mode(self.LightMode.OFF, 0)
