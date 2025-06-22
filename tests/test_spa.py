@@ -513,17 +513,27 @@ async def test_get_energy_usage(mock_api, spa):
 
 
 async def test_set_heat_mode(mock_api, spa):
+    mock_api.request.side_effect = [
+        None,  # initial config PATCH
+        {"heatMode": "AUTO"},
+    ]
     await spa.set_heat_mode(smarttub.Spa.HeatMode.AUTO)
-    mock_api.request.assert_called_with(
+    mock_api.request.assert_any_call(
         "PATCH", f"spas/{spa.id}/config", {"heatMode": "AUTO"}
     )
+    mock_api.request.assert_any_call("GET", f"spas/{spa.id}/status")
 
 
 async def test_set_temperature(mock_api, spa):
+    mock_api.request.side_effect = [
+        None,
+        {"setTemperature": 38.3},
+    ]
     await spa.set_temperature(38.3)
-    mock_api.request.assert_called_with(
+    mock_api.request.assert_any_call(
         "PATCH", f"spas/{spa.id}/config", {"setTemperature": 38.3}
     )
+    mock_api.request.assert_any_call("GET", f"spas/{spa.id}/status")
 
 
 async def test_toggle_clearray(mock_api, spa):
@@ -532,10 +542,15 @@ async def test_toggle_clearray(mock_api, spa):
 
 
 async def test_set_temperature_format(mock_api, spa):
+    mock_api.request.side_effect = [
+        None,
+        {"displayTemperatureFormat": "FAHRENHEIT"},
+    ]
     await spa.set_temperature_format(smarttub.Spa.TemperatureFormat.FAHRENHEIT)
-    mock_api.request.assert_called_with(
+    mock_api.request.assert_any_call(
         "POST", f"spas/{spa.id}/config", {"displayTemperatureFormat": "FAHRENHEIT"}
     )
+    mock_api.request.assert_any_call("GET", f"spas/{spa.id}/status")
 
 
 async def test_set_date_time(mock_api, spa):
