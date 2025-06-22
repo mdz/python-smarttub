@@ -25,6 +25,6 @@ jobs:
       - name: Install all dependencies
         run: uv pip install --system '.[dev]'
       - name: Lint with flake8
-        run: uv run flake8 --show-source --statistics
+        run: flake8 smarttub tests --show-source --statistics
       - name: Test with pytest
-        run: uv run pytest --cov-fail-under=100 --cov-report=term-missing
+        run: pytest --cov-fail-under=100 --cov-report=term-missing
