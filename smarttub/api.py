@@ -277,7 +277,7 @@ class Spa:
     async def set_temperature_format(self, temperature_format: TemperatureFormat):
         body = {"displayTemperatureFormat": temperature_format.name}
         await self.request("POST", "config", body)
-        await self._wait_for_state_change(lambda state: state.display_temperature_format == temperature_format)
+        await self._wait_for_state_change(lambda state: state.display_temperature_format == temperature_format.name)
 
     async def set_date_time(
         self, date: datetime.date = None, time: datetime.time = None

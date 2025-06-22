@@ -1,6 +1,7 @@
 import datetime
 from dateutil.tz import tzutc
 from unittest.mock import create_autospec
+import itertools
 
 import pytest
 
@@ -512,28 +513,92 @@ async def test_get_energy_usage(mock_api, spa):
     assert usage == []
 
 
-async def test_set_heat_mode(mock_api, spa):
-    mock_api.request.side_effect = [
-        None,  # initial config PATCH
-        {"heatMode": "AUTO"},
-    ]
-    await spa.set_heat_mode(smarttub.Spa.HeatMode.AUTO)
-    mock_api.request.assert_any_call(
-        "PATCH", f"spas/{spa.id}/config", {"heatMode": "AUTO"}
+def setup_state_change_mock(mock_api, patch_args, state_response):
+    """
+    Helper to mock a PATCH/POST followed by repeated GETs for state polling.
+    patch_args: tuple of (method, url, body) for the state-changing call
+    state_response: dict to merge into the GET status dict
+    """
+    # Compose a full status dict, merging in the state_response for the field being tested
+    full_status = {
+        "ambientTemperature": 65.6,
+        "blowoutCycle": "INACTIVE",
+        "cleanupCycle": "INACTIVE",
+        "current": {"average": 0.0, "kwh": 0.213, "max": 0.0, "min": 0.0, "value": 0.0},
+        "date": "2021-02-21",
+        "demoMode": "DISABLED",
+        "dipSwitches": 8,
+        "displayTemperatureFormat": state_response.get("displayTemperatureFormat", "FAHRENHEIT"),
+        "error": {"code": 0, "description": None, "title": "All Clear"},
+        "errorCode": 0,
+        "fieldsLastUpdated": {},
+        "flowSwitch": "OPEN",
+        "heatMode": state_response.get("heatMode", "AUTO"),
+        "heater": "OFF",
+        "highTemperatureLimit": 36.1,
+        "lastUpdated": "2021-02-21T21:32:36.215Z",
+        "lights": None,
+        "locks": {
+            "access": "UNLOCKED",
+            "maintenance": "UNLOCKED",
+            "spa": "UNLOCKED",
+            "temperature": "UNLOCKED",
+        },
+        "online": True,
+        "ozone": "OFF",
+        "primaryFiltration": {
+            "cycle": 1,
+            "duration": 4,
+            "lastUpdated": "2021-01-20T11:38:57.014Z",
+            "mode": "NORMAL",
+            "startHour": 2,
+            "status": "INACTIVE",
+        },
+        "pumps": None,
+        "secondaryFiltration": {
+            "lastUpdated": "2020-07-09T19:39:52.961Z",
+            "mode": "AWAY",
+            "status": "INACTIVE",
+        },
+        "setTemperature": state_response.get("setTemperature", 38.3),
+        "state": "NORMAL",
+        "time": "14:45:00",
+        "timeFormat": "HOURS_12",
+        "timeSet": None,
+        "timezone": None,
+        "uv": "OFF",
+        "uvOnDemand": "OFF",
+        "versions": {"balboa": "1.06", "controller": "1.28", "jacuzziLink": "53"},
+        "water": {
+            "oxidationReductionPotential": 604,
+            "ph": 7.01,
+            "temperature": 38.3,
+            "temperatureLastUpdated": "2021-02-21T16:40:10.054Z",
+            "turbidity": 0.01,
+        },
+        "watercare": None,
+    }
+    mock_api.request.side_effect = itertools.chain(
+        [None],  # PATCH/POST
+        itertools.repeat(full_status)  # infinite GETs
     )
-    mock_api.request.assert_any_call("GET", f"spas/{spa.id}/status")
+    return patch_args
+
+
+async def test_set_heat_mode(mock_api, spa):
+    patch_args = ("PATCH", f"spas/{spa.id}/config", {"heatMode": "AUTO"})
+    setup_state_change_mock(mock_api, patch_args, {"heatMode": "AUTO"})
+    await spa.set_heat_mode(smarttub.Spa.HeatMode.AUTO)
+    mock_api.request.assert_any_call(*patch_args)
+    mock_api.request.assert_any_call("GET", f"spas/{spa.id}/status", None)
 
 
 async def test_set_temperature(mock_api, spa):
-    mock_api.request.side_effect = [
-        None,
-        {"setTemperature": 38.3},
-    ]
+    patch_args = ("PATCH", f"spas/{spa.id}/config", {"setTemperature": 38.3})
+    setup_state_change_mock(mock_api, patch_args, {"setTemperature": 38.3})
     await spa.set_temperature(38.3)
-    mock_api.request.assert_any_call(
-        "PATCH", f"spas/{spa.id}/config", {"setTemperature": 38.3}
-    )
-    mock_api.request.assert_any_call("GET", f"spas/{spa.id}/status")
+    mock_api.request.assert_any_call(*patch_args)
+    mock_api.request.assert_any_call("GET", f"spas/{spa.id}/status", None)
 
 
 async def test_toggle_clearray(mock_api, spa):
@@ -542,15 +607,11 @@ async def test_toggle_clearray(mock_api, spa):
 
 
 async def test_set_temperature_format(mock_api, spa):
-    mock_api.request.side_effect = [
-        None,
-        {"displayTemperatureFormat": "FAHRENHEIT"},
-    ]
+    patch_args = ("POST", f"spas/{spa.id}/config", {"displayTemperatureFormat": "FAHRENHEIT"})
+    setup_state_change_mock(mock_api, patch_args, {"displayTemperatureFormat": "FAHRENHEIT"})
     await spa.set_temperature_format(smarttub.Spa.TemperatureFormat.FAHRENHEIT)
-    mock_api.request.assert_any_call(
-        "POST", f"spas/{spa.id}/config", {"displayTemperatureFormat": "FAHRENHEIT"}
-    )
-    mock_api.request.assert_any_call("GET", f"spas/{spa.id}/status")
+    mock_api.request.assert_any_call(*patch_args)
+    mock_api.request.assert_any_call("GET", f"spas/{spa.id}/status", None)
 
 
 async def test_set_date_time(mock_api, spa):
