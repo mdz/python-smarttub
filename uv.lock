@@ -1259,7 +1259,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'" },
     { name = "pytest-asyncio", marker = "extra == 'dev'" },
     { name = "pytest-cov", marker = "extra == 'dev'" },
-    { name = "python-dateutil", specifier = "~=2.8.1" },
+    { name = "python-dateutil", specifier = ">=2.8.1" },
     { name = "twine", marker = "extra == 'dev'" },
 ]
 provides-extras = ["dev"]
