@@ -179,7 +179,9 @@ class Spa:
     async def request(self, method, resource: str, body=None):
         return await self._api.request(method, f"spas/{self.id}/{resource}", body)
 
-    async def _wait_for_state_change(self, check_func, timeout=10, get_status_method=None):
+    async def _wait_for_state_change(
+        self, check_func, timeout=10, get_status_method=None
+    ):
         """Wait for a state change to be reflected in the API.
 
         Args:
@@ -272,7 +274,9 @@ class Spa:
             "setTemperature": round(temp_c, 1)
         }
         await self.request("PATCH", "config", body)
-        await self._wait_for_state_change(lambda state: state.set_temperature == round(temp_c, 1))
+        await self._wait_for_state_change(
+            lambda state: state.set_temperature == round(temp_c, 1)
+        )
 
     async def toggle_clearray(self):
         await self.request("POST", "clearray/toggle")
@@ -281,7 +285,9 @@ class Spa:
     async def set_temperature_format(self, temperature_format: TemperatureFormat):
         body = {"displayTemperatureFormat": temperature_format.name}
         await self.request("POST", "config", body)
-        await self._wait_for_state_change(lambda state: state.display_temperature_format == temperature_format.name)
+        await self._wait_for_state_change(
+            lambda state: state.display_temperature_format == temperature_format.name
+        )
 
     async def set_date_time(
         self, date: datetime.date = None, time: datetime.time = None
@@ -487,7 +493,7 @@ class SpaPump:
                 for pump in state.pumps
                 if pump.id == self.id
             ),
-            get_status_method=self.spa.get_status_full
+            get_status_method=self.spa.get_status_full,
         )
 
     def __str__(self):
@@ -528,7 +534,7 @@ class SpaLight:
                 for light in state.lights
                 if light.zone == self.zone
             ),
-            get_status_method=self.spa.get_status_full
+            get_status_method=self.spa.get_status_full,
         )
 
     async def turn_off(self):

@@ -1,7 +1,6 @@
 import datetime
 from dateutil.tz import tzutc
 from unittest.mock import create_autospec
-import itertools
 import copy
 
 import pytest
@@ -577,26 +576,46 @@ def canonical_status(**overrides):
     status.update(overrides)
     return copy.deepcopy(status)
 
+
 # Canonical full status dict for /fullStatus endpoint (includes pumps/lights)
 def canonical_full_status(**overrides):
     full_status = canonical_status()
     full_status["pumps"] = [
-        {"id": "P1", "speed": "ONE_SPEED", "state": "OFF", "type": "JET", "current": None},
-        {"id": "CP", "speed": "ONE_SPEED", "state": "OFF", "type": "CIRCULATION", "current": None},
+        {
+            "id": "P1",
+            "speed": "ONE_SPEED",
+            "state": "OFF",
+            "type": "JET",
+            "current": None,
+        },
+        {
+            "id": "CP",
+            "speed": "ONE_SPEED",
+            "state": "OFF",
+            "type": "CIRCULATION",
+            "current": None,
+        },
     ]
     full_status["lights"] = [
-        {"zone": 1, "color": {"red": 0, "green": 0, "blue": 0, "white": 0}, "intensity": 0, "mode": "OFF"}
+        {
+            "zone": 1,
+            "color": {"red": 0, "green": 0, "blue": 0, "white": 0},
+            "intensity": 0,
+            "mode": "OFF",
+        }
     ]
     full_status.update(overrides)
     return copy.deepcopy(full_status)
 
+
 # Update setup_state_change_mock to use canonical_status or canonical_full_status
 def setup_state_change_mock(mock_api, patch_args, state_response, full=False):
     import itertools
+
     status_func = canonical_full_status if full else canonical_status
     mock_api.request.side_effect = itertools.chain(
         [None],  # PATCH/POST
-        itertools.repeat(status_func(**state_response))  # infinite GETs
+        itertools.repeat(status_func(**state_response)),  # infinite GETs
     )
     return patch_args
 
@@ -623,8 +642,14 @@ async def test_toggle_clearray(mock_api, spa):
 
 
 async def test_set_temperature_format(mock_api, spa):
-    patch_args = ("POST", f"spas/{spa.id}/config", {"displayTemperatureFormat": "FAHRENHEIT"})
-    setup_state_change_mock(mock_api, patch_args, {"displayTemperatureFormat": "FAHRENHEIT"})
+    patch_args = (
+        "POST",
+        f"spas/{spa.id}/config",
+        {"displayTemperatureFormat": "FAHRENHEIT"},
+    )
+    setup_state_change_mock(
+        mock_api, patch_args, {"displayTemperatureFormat": "FAHRENHEIT"}
+    )
     await spa.set_temperature_format(smarttub.Spa.TemperatureFormat.FAHRENHEIT)
     mock_api.request.assert_any_call(*patch_args)
     mock_api.request.assert_any_call("GET", f"spas/{spa.id}/status", None)
