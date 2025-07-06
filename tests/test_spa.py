@@ -408,6 +408,7 @@ async def test_get_lights(mock_api, spa):
             {
                 "color": {"blue": 0, "green": 0, "red": 0, "white": 0},
                 "intensity": 0,
+                "cycleSpeed": 0,
                 "mode": "OFF",
                 "zone": 1,
             }
