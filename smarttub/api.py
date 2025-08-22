@@ -162,7 +162,7 @@ class Account:
 
 
 class Spa:
-    HeatMode = Enum("HeatMode", "ECONOMY DAY AUTO READY REST")
+    HeatMode = Enum("HeatMode", "ECONOMY DAY NIGHT AUTO READY REST")
     TemperatureFormat = Enum("TemperatureFormat", "FAHRENHEIT CELSIUS")
     EnergyUsageInterval = Enum("EnergyUsageInterval", "DAY MONTH")
 
