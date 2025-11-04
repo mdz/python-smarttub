@@ -196,8 +196,10 @@ class Spa:
             RuntimeError if the state change is not reflected within the timeout period
         """
         start_time = datetime.datetime.now().timestamp()
+        # Use the provided method if available, otherwise use default get_status
+        status_method = get_status_method if get_status_method else self.get_status
         while True:
-            state = await self.get_status()
+            state = await status_method()
             if check_func(state):
                 return state
 
@@ -205,9 +207,6 @@ class Spa:
                 raise RuntimeError("State change not reflected within timeout period")
 
             await asyncio.sleep(0.5)
-
-            if get_status_method:
-                state = await get_status_method()
 
     async def get_status(self) -> "SpaState":
         """Query the status of the spa."""
@@ -407,10 +406,12 @@ class SpaStateFull(SpaState):
     def __init__(self, spa: Spa, state: dict):
         super().__init__(spa, **state)
         self.lights = [
-            SpaLight(spa, **light_props) for light_props in self.properties["lights"]
+            SpaLight(spa, **light_props)
+            for light_props in (self.properties.get("lights") or [])
         ]
         self.pumps = [
-            SpaPump(spa, **pump_props) for pump_props in self.properties["pumps"]
+            SpaPump(spa, **pump_props)
+            for pump_props in (self.properties.get("pumps") or [])
         ]
         self.sensors = [
             SpaSensor(spa, **sensor_props)
