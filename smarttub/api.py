@@ -465,10 +465,7 @@ class SpaLight:
 
         self.intensity = properties["intensity"]
         self.mode = self.LightMode[properties["mode"]]
-        try:
-            self.cycleSpeed = properties["cycleSpeed"]
-        except KeyError as e:
-            logger.debug(f'Benign: {e}')
+        self.cycleSpeed = properties.get("cycleSpeed", None)
         self.properties = properties
 
     async def set_mode(self, mode: LightMode, intensity: int):
