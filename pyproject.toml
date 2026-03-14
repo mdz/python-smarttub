@@ -12,15 +12,14 @@ dependencies = [
     "python-dateutil>=2.8.1"
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
     "aresponses",
     "pre-commit",
-    "black",
-    "flake8",
+    "ruff",
     "twine"
 ]
 
