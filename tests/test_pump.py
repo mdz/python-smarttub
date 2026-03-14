@@ -13,9 +13,11 @@ def pumps(mock_spa):
             **{
                 "id": "pid1",
                 "speed": "speed1",
-                "state": "OFF"
-                if pump_type == SpaPump.PumpType.CIRCULATION
-                else SpaPump.PumpState.HIGH.name,
+                "state": (
+                    "OFF"
+                    if pump_type == SpaPump.PumpType.CIRCULATION
+                    else SpaPump.PumpState.HIGH.name
+                ),
                 "type": pump_type.name,
             },
         )

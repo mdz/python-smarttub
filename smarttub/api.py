@@ -1,105 +1,113 @@
 import asyncio
+import base64
 import datetime
 from enum import Enum
+import json
 import logging
-import time
 from typing import List
 
 import aiohttp
 import dateutil.parser
 from inflection import underscore
-import jwt
 
 logger = logging.getLogger(__name__)
 
 
 class SmartTub:
-    """Interface to the SmartTub API"""
+    """Interface to the SmartTub API."""
 
-    AUTH_AUDIENCE = "https://api.operation-link.com/"
-    AUTH_URL = "https://smarttub.auth0.com/oauth/token"
-    AUTH_CLIENT_ID = "dB7Rcp3rfKKh0vHw2uqkwOZmRb5WNjQC"
-    AUTH_REALM = "Username-Password-Authentication"
-    AUTH_ACCOUNT_ID_KEY = "http://operation-link.com/account_id"
-    AUTH_GRANT_TYPE = "http://auth0.com/oauth/grant-type/password-realm"
-    AUTH_SCOPE = "openid email offline_access User Admin"
-
+    AUTH_URL = "https://api.smarttub.io/idp/signin"
     API_BASE = "https://api.smarttub.io"
 
     def __init__(self, session: aiohttp.ClientSession = None):
-        self.logged_in = False
         self._session = session or aiohttp.ClientSession()
+        self._access_token: str | None = None
+        self._refresh_token: str | None = None
+        self._id_token: str | None = None
+        self._token_expires_at: datetime.datetime | None = None
+        self.account_id: str | None = None
+        # Store credentials for re-authentication (no refresh endpoint available)
+        self._username: str | None = None
+        self._password: str | None = None
 
-    async def login(self, username: str, password: str):
-        """Authenticate to SmartTub
+    async def login(self, username: str, password: str) -> None:
+        """Authenticate to SmartTub.
 
         This method must be called before any useful work can be done.
 
         username -- the email address for the SmartTub account
         password -- the password for the SmartTub account
         """
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+        body = {"username": username, "password": password}
 
-        # https://auth0.com/docs/api-auth/tutorials/password-grant
-        r = await self._session.post(
-            self.AUTH_URL,
-            json={
-                "audience": self.AUTH_AUDIENCE,
-                "client_id": self.AUTH_CLIENT_ID,
-                "grant_type": self.AUTH_GRANT_TYPE,
-                "realm": self.AUTH_REALM,
-                "scope": self.AUTH_SCOPE,
-                "username": username,
-                "password": password,
-            },
-        )
-        if r.status == 403:
-            raise LoginFailed(r.text)
+        async with self._session.post(
+            self.AUTH_URL, json=body, headers=headers
+        ) as response:
+            try:
+                data = await response.json()
+            except Exception:
+                text = await response.text()
+                raise LoginFailed(f"Login failed: {response.status} - {text}")
 
-        r.raise_for_status()
-        j = await r.json()
+            if response.status != 201:
+                if isinstance(data, list):
+                    error_msg = ", ".join(str(x) for x in data)
+                else:
+                    error_msg = data.get("message", "Unknown error")
+                raise LoginFailed(f"Login failed ({response.status}): {error_msg}")
 
-        self._set_access_token(j["access_token"])
-        self.refresh_token = j["refresh_token"]
-        assert j["token_type"] == "Bearer"
+            try:
+                token_data = data["token"]
+                self._access_token = token_data["access_token"]
+                self._refresh_token = token_data.get("refresh_token")
+                self._id_token = token_data.get("id_token")
 
-        self.account_id = self.access_token_data[self.AUTH_ACCOUNT_ID_KEY]
-        self.logged_in = True
+                # Extract account_id from ID token
+                if self._id_token:
+                    parts = self._id_token.split(".")
+                    if len(parts) > 1:
+                        payload_b64 = parts[1]
+                        # Fix Base64 padding
+                        padded = payload_b64 + "=" * (-len(payload_b64) % 4)
+                        decoded_bytes = base64.b64decode(padded)
+                        jwt_data = json.loads(decoded_bytes)
+                        self.account_id = jwt_data.get("custom:account_id")
 
-        logger.debug(f"login successful, username={username}")
+                expires_in = token_data.get("expires_in", 86400)
+                self._token_expires_at = datetime.datetime.now() + datetime.timedelta(
+                    seconds=expires_in
+                )
+
+                # Store credentials for re-authentication when token expires
+                self._username = username
+                self._password = password
+
+                logger.debug(f"login successful, username={username}")
+
+            except KeyError as exc:
+                raise LoginFailed(
+                    "Login successful but response format was unexpected"
+                ) from exc
 
     @property
     def _headers(self):
-        return {"Authorization": f"Bearer {self.access_token}"}
+        return {"Authorization": f"Bearer {self._access_token}"}
 
     async def _require_login(self):
-        if not self.logged_in:
+        """Ensure we have a valid access token, re-authenticating if needed."""
+        if not self._access_token:
             raise RuntimeError("not logged in")
-        if self.token_expires_at <= time.time():
-            await self._refresh_token()
-
-    def _set_access_token(self, token):
-        self.access_token = token
-        self.access_token_data = jwt.decode(
-            self.access_token,
-            algorithms=["HS256"],
-            options={"verify_signature": False, "verify": False},
-        )
-        self.token_expires_at = self.access_token_data["exp"]
-
-    async def _refresh_token(self):
-        # https://auth0.com/docs/tokens/guides/use-refresh-tokens
-        r = await self._session.post(
-            self.AUTH_URL,
-            json={
-                "grant_type": "refresh_token",
-                "client_id": self.AUTH_CLIENT_ID,
-                "refresh_token": self.refresh_token,
-            },
-        )
-        r.raise_for_status()
-        j = await r.json()
-        self._set_access_token(j["access_token"])
-        logger.debug("token refresh successful")
+        if self._token_expires_at and datetime.datetime.now() > self._token_expires_at:
+            # Token expired - re-authenticate using stored credentials
+            if self._username and self._password:
+                logger.debug("token expired, re-authenticating")
+                await self.login(self._username, self._password)
+            else:
+                raise RuntimeError("token expired and no credentials available")
 
     async def request(self, method, path, body=None):
         """Generic method for making an authenticated request to the API
@@ -162,7 +170,7 @@ class Account:
 
 
 class Spa:
-    HeatMode = Enum("HeatMode", "ECONOMY DAY AUTO READY")
+    HeatMode = Enum("HeatMode", "ECONOMY DAY AUTO READY REST")
     TemperatureFormat = Enum("TemperatureFormat", "FAHRENHEIT CELSIUS")
     EnergyUsageInterval = Enum("EnergyUsageInterval", "DAY MONTH")
 
@@ -178,6 +186,35 @@ class Spa:
 
     async def request(self, method, resource: str, body=None):
         return await self._api.request(method, f"spas/{self.id}/{resource}", body)
+
+    async def _wait_for_state_change(
+        self, check_func, timeout=10, get_status_method=None
+    ):
+        """Wait for a state change to be reflected in the API.
+
+        Args:
+            check_func: A function that takes a SpaState and returns True if the desired state is reached
+            timeout: Maximum time to wait in seconds
+            get_status_method: A method to call to get the current state if needed
+
+        Returns:
+            The final SpaState after the change is complete
+
+        Raises:
+            RuntimeError if the state change is not reflected within the timeout period
+        """
+        start_time = datetime.datetime.now().timestamp()
+        # Use the provided method if available, otherwise use default get_status
+        status_method = get_status_method if get_status_method else self.get_status
+        while True:
+            state = await status_method()
+            if check_func(state):
+                return state
+
+            if datetime.datetime.now().timestamp() - start_time > timeout:
+                raise RuntimeError("State change not reflected within timeout period")
+
+            await asyncio.sleep(0.5)
 
     async def get_status(self) -> "SpaState":
         """Query the status of the spa."""
@@ -236,6 +273,7 @@ class Spa:
     async def set_heat_mode(self, mode: HeatMode):
         body = {"heatMode": mode.name}
         await self.request("PATCH", "config", body)
+        await self._wait_for_state_change(lambda state: state.heat_mode == mode)
 
     async def set_temperature(self, temp_c: float):
         body = {
@@ -243,13 +281,20 @@ class Spa:
             "setTemperature": round(temp_c, 1)
         }
         await self.request("PATCH", "config", body)
+        await self._wait_for_state_change(
+            lambda state: state.set_temperature == round(temp_c, 1)
+        )
 
     async def toggle_clearray(self):
         await self.request("POST", "clearray/toggle")
+        # No need to wait for state change as this is a toggle operation
 
     async def set_temperature_format(self, temperature_format: TemperatureFormat):
         body = {"displayTemperatureFormat": temperature_format.name}
         await self.request("POST", "config", body)
+        await self._wait_for_state_change(
+            lambda state: state.display_temperature_format == temperature_format.name
+        )
 
     async def set_date_time(
         self, date: datetime.date = None, time: datetime.time = None
@@ -265,6 +310,7 @@ class Spa:
             config["time"] = time.isoformat("minutes")
         body = {"dateTimeConfig": config}
         await self.request("POST", "config", body)
+        # No need to wait for state change as this is a one-time operation
 
     def __str__(self):
         return f"<Spa {self.id}>"
@@ -368,10 +414,16 @@ class SpaStateFull(SpaState):
     def __init__(self, spa: Spa, state: dict):
         super().__init__(spa, **state)
         self.lights = [
-            SpaLight(spa, **light_props) for light_props in self.properties["lights"]
+            SpaLight(spa, **light_props)
+            for light_props in (self.properties.get("lights") or [])
         ]
         self.pumps = [
-            SpaPump(spa, **pump_props) for pump_props in self.properties["pumps"]
+            SpaPump(spa, **pump_props)
+            for pump_props in (self.properties.get("pumps") or [])
+        ]
+        self.sensors = [
+            SpaSensor(spa, **sensor_props)
+            for sensor_props in self.properties.get("sensors", [])
         ]
 
 
@@ -385,7 +437,7 @@ class SpaWaterState(SpaState):
 
 
 class SpaPrimaryFiltrationCycle(SpaState):
-    PrimaryFiltrationMode = Enum("PrimaryFiltrationMode", "NORMAL")
+    PrimaryFiltrationMode = Enum("PrimaryFiltrationMode", "NORMAL NANO_MODE ECO_MODE")
 
     def __init__(self, spa: Spa, **properties):
         self.spa = spa
@@ -441,7 +493,17 @@ class SpaPump:
         self.properties = properties
 
     async def toggle(self):
+        # For toggle, we need to wait for the state to change from its current state
+        current_state = self.state
         await self.spa.request("POST", f"pumps/{self.id}/toggle")
+        await self.spa._wait_for_state_change(
+            lambda state: any(
+                pump.state != current_state
+                for pump in state.pumps
+                if pump.id == self.id
+            ),
+            get_status_method=self.spa.get_status_full,
+        )
 
     def __str__(self):
         return f"<SpaPump {self.id}: {self.type.name}={self.state.name}>"
@@ -450,7 +512,7 @@ class SpaPump:
 class SpaLight:
     LightMode = Enum(
         "LightMode",
-        "PURPLE ORANGE RED YELLOW GREEN AQUA BLUE WHITE AMBER HIGH_SPEED_COLOR_WHEEL HIGH_SPEED_WHEEL LOW_SPEED_WHEEL FULL_DYNAMIC_RGB AUTO_TIMER_EXTERIOR PARTY OFF ON",
+        "PURPLE ORANGE RED YELLOW GREEN AQUA BLUE WHITE AMBER HIGH_SPEED_COLOR_WHEEL HIGH_SPEED_WHEEL LOW_SPEED_WHEEL FULL_DYNAMIC_RGB AUTO_TIMER_EXTERIOR PARTY COLOR_WHEEL OFF ON",
     )
 
     def __init__(self, spa: Spa, **properties):
@@ -465,6 +527,7 @@ class SpaLight:
 
         self.intensity = properties["intensity"]
         self.mode = self.LightMode[properties["mode"]]
+        self.cycleSpeed = properties.get("cycleSpeed", None)
         self.properties = properties
 
     async def set_mode(self, mode: LightMode, intensity: int):
@@ -475,12 +538,20 @@ class SpaLight:
             "mode": mode.name,
         }
         await self.spa.request("PATCH", f"lights/{self.zone}", body)
+        await self.spa._wait_for_state_change(
+            lambda state: any(
+                light.mode == mode and light.intensity == intensity
+                for light in state.lights
+                if light.zone == self.zone
+            ),
+            get_status_method=self.spa.get_status_full,
+        )
 
     async def turn_off(self):
         await self.set_mode(self.LightMode.OFF, 0)
 
     def __str__(self):
-        return f"<SpaLight {self.zone}: {self.mode.name} (R {self.red}/G {self.green}/B {self.blue}/W {self.white}) @ {self.intensity}>"
+        return f"<SpaLight {self.zone}: {self.mode.name} {self.cycleSpeed} (R {self.red}/G {self.green}/B {self.blue}/W {self.white}) @ {self.intensity}>"
 
 
 class SpaReminder:
@@ -556,6 +627,23 @@ class SpaLock:
 
     def __str__(self):
         return f"<SpaLock {self.kind}: {self.state}>"
+
+
+class SpaSensor:
+    def __init__(self, spa: Spa, **properties):
+        self.spa = spa
+        self.address = properties["address"]
+        self.name = properties["name"]
+        self.type = properties["type"]
+        self.subType = properties["subType"]
+
+        self.magnet = properties["magnet"]
+        self.pressure = properties["pressure"]
+        self.motion = properties["motion"]
+        self.fill_drain = properties["fill_drain"]
+
+    def __str__(self):
+        return f"<SpaSensor {self.name} ({self.type})"
 
 
 class LoginFailed(RuntimeError):

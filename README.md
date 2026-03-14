@@ -43,5 +43,6 @@ python3 -m smarttub -u YOUR_SMARTTUB_EMAIL -p YOUR_SMARTTUB_PASSWORD -vv info -a
 
 ## Contributing
 ```bash
-pip install pre-commit && pre-commit install
+uv sync --extra dev
+uv run pre-commit install
 ```
