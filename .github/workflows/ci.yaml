@@ -23,8 +23,8 @@ jobs:
       - name: Add uv to PATH
         run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
       - name: Install all dependencies
-        run: uv sync --extra dev
-      - name: Lint with flake8
-        run: uv run flake8 smarttub tests --show-source --statistics
+        run: uv sync --dev
+      - name: Lint with ruff
+        run: uv run ruff check smarttub tests
       - name: Test with pytest
         run: uv run pytest --cov-fail-under=100 --cov-report=term-missing

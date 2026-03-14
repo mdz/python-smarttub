@@ -19,8 +19,7 @@ dev = [
     "pytest-cov",
     "aresponses",
     "pre-commit",
-    "black",
-    "flake8",
+    "ruff",
     "twine"
 ]
 
