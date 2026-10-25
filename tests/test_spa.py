@@ -693,3 +693,26 @@ async def test_secondary_filtration_cycle(mock_api, spa):
     mock_api.request.assert_called_with(
         "PATCH", f"spas/{spa.id}/config", {"secondaryFiltrationConfig": "FREQUENT"}
     )
+
+
+async def test_get_status_full_raw_tolerates_unknown_values(mock_api, spa):
+    payload = {"heatMode": "SOME_NEW_MODE", "location": {"latitude": 1.0}}
+    mock_api.request.return_value = payload
+
+    with pytest.raises(KeyError):
+        await spa.get_status_full()
+    assert await spa.get_status_full_raw() == payload
+
+
+async def test_get_errors_raw(mock_api, spa):
+    mock_api.request.return_value = {"content": [{"code": 1, "createdAt": None}]}
+
+    assert await spa.get_errors_raw() == [{"code": 1, "createdAt": None}]
+    mock_api.request.assert_called_with("GET", f"spas/{spa.id}/errors", None)
+
+
+async def test_get_reminders_raw(mock_api, spa):
+    mock_api.request.return_value = {"reminders": [{"id": "r1", "lastUpdated": None}]}
+
+    assert await spa.get_reminders_raw() == [{"id": "r1", "lastUpdated": None}]
+    mock_api.request.assert_called_with("GET", f"spas/{spa.id}/reminders", None)

@@ -254,6 +254,22 @@ class Spa:
             logger.error(f"Failed to parse fullStatus response: {full_status}")
             raise
 
+    async def get_status_full_raw(self) -> dict:
+        """Retrieve the unparsed fullStatus response.
+
+        Unlike get_status_full(), this does not raise on values the library
+        does not recognize, so it is suitable for diagnostics.
+        """
+        return await self.request("GET", "fullStatus")
+
+    async def get_errors_raw(self) -> list:
+        """Retrieve the unparsed errors, without validating their contents."""
+        return (await self.request("GET", "errors"))["content"]
+
+    async def get_reminders_raw(self) -> list:
+        """Retrieve the unparsed reminders, without validating their contents."""
+        return (await self.request("GET", "reminders"))["reminders"]
+
     async def get_debug_status(self) -> dict:
         return (await self.request("GET", "debugStatus"))["debugStatus"]
 

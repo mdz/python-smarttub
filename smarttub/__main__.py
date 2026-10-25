@@ -10,77 +10,85 @@ import aiohttp
 from . import SmartTub, SpaLight
 
 
+async def _section(title, fetch):
+    print(f"== {title} ==")
+    try:
+        pprint(await fetch())
+    except Exception as err:
+        print(f"Error: {type(err).__name__}: {err}")
+    print()
+
+
 async def info_command(spas, args):
     for spa in spas:
         print(f"= Spa '{spa.name}' =\n")
-        if args.all or args.status or args.location or args.locks:
-            status = await spa.get_status_full()
+
+        status = None
+        status_error = None
+        if args.all or any(
+            (
+                args.status,
+                args.location,
+                args.pumps,
+                args.lights,
+                args.locks,
+                args.sensors,
+            )
+        ):
+            try:
+                status = await spa.get_status_full_raw()
+            except Exception as err:
+                status_error = f"Error: {type(err).__name__}: {err}"
+
+        def from_status(fetch):
+            async def inner():
+                if status is None:
+                    raise RuntimeError(status_error)
+                return fetch(status)
+
+            return inner
 
         if args.all or args.status:
-            print("== Status ==")
-            status_dict = status.properties.copy()
-            # redact location for privacy
-            location = status_dict.pop("location")
-            pprint(status_dict)
-            print()
+            # location is redacted for privacy unless --location is given
+            await _section(
+                "Status",
+                from_status(lambda s: {k: v for k, v in s.items() if k != "location"}),
+            )
 
         if args.location:
             # not included in --all
-            print(
-                f"Location: {location['latitude']} {location['longitude']} (accuracy: {location['accuracy']})\n"
-            )
+            await _section("Location", from_status(lambda s: s["location"]))
 
         if args.all or args.pumps:
-            print("== Pumps ==")
-            for pump in status.pumps:
-                print(pump)
-            print()
+            await _section("Pumps", from_status(lambda s: s.get("pumps")))
 
         if args.all or args.lights:
-            print("== Lights ==")
-            for light in status.lights:
-                print(light)
-            print()
+            await _section("Lights", from_status(lambda s: s.get("lights")))
 
         if args.all or args.errors:
-            print("== Errors ==")
-            for error in await spa.get_errors():
-                print(error)
-            print()
+            await _section("Errors", spa.get_errors_raw)
 
         if args.all or args.reminders:
-            print("== Reminders ==")
-            for reminder in await spa.get_reminders():
-                print(reminder)
-            print()
+            await _section("Reminders", spa.get_reminders_raw)
 
         if args.all or args.locks:
-            print("== Locks ==")
-            for lock in status.locks.values():
-                print(lock)
-            print()
+            await _section("Locks", from_status(lambda s: s.get("locks")))
 
         if args.all or args.energy:
-            print("== Energy usage ==")
-            energy_usage_day = spa.get_energy_usage(
-                spa.EnergyUsageInterval.DAY,
-                end_date=datetime.date.today(),
-                start_date=datetime.date.today() - datetime.timedelta(days=7),
+            await _section(
+                "Energy usage",
+                lambda: spa.get_energy_usage(
+                    spa.EnergyUsageInterval.DAY,
+                    end_date=datetime.date.today(),
+                    start_date=datetime.date.today() - datetime.timedelta(days=7),
+                ),
             )
-            pprint(await energy_usage_day)
-            print()
 
         if args.all or args.sensors:
-            print("== Sensors ==")
-            for sensor in status.sensors:
-                print(sensor)
-            print()
+            await _section("Sensors", from_status(lambda s: s.get("sensors")))
 
         if args.all or args.debug:
-            debug_status = await spa.get_debug_status()
-            print("== Debug status ==")
-            pprint(debug_status)
-            print()
+            await _section("Debug status", spa.get_debug_status)
 
 
 async def set_command(spas, args):
@@ -203,4 +211,5 @@ async def main(argv):
         await args.func(spas, args)
 
 
-asyncio.run(main(sys.argv[1:]))
+if __name__ == "__main__":
+    asyncio.run(main(sys.argv[1:]))
